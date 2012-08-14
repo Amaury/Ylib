@@ -18,15 +18,15 @@ extern "C" {
 # include "gc.h"
 #endif /* USE_BOEHM_GC */
 
-/** @define YHM_MAX_LOAD_FACTOR	Maximum load factor of an hash map before increasing it. */
-#define YHM_MAX_LOAD_FACTOR	5.7
+/** @define YHM_MAX_LOAD_FACTOR	Maximum load factor of a hash map before increasing it. */
+#define YHM_MAX_LOAD_FACTOR	0.7
 
-/** @define YHM_MIN_LOAD_FACTOR Minimum load factor of an hash map before reducing it. */
+/** @define YHM_MIN_LOAD_FACTOR Minimum load factor of a hash map before reducing it. */
 #define YHM_MIN_LOAD_FACTOR	0.25
 
 /**
  * @typedef	yhm_size_t
- *		Enum used to define the size of an hash map.
+ *		Enum used to define the size of a hash map.
  * @constant	YHM_SIZE_MINI		Minimal size of hash maps (32).
  * @constant	YHM_SIZE_MEDIUM		Medium size of hash maps (256).
  * @constant	YHM_SIZE_DEFAULT	Default size of hash maps (4K).
@@ -43,7 +43,7 @@ typedef enum yhm_size_e {
 
 /**
  * typedef	yhm_element_t
- *		Structure used to store an hash map's element.
+ *		Structure used to store a hash map's element.
  * @field	key		Element's key.
  * @field	data		Element's data.
  * @field	previous	Pointer to the previous element with the same hash value.
@@ -58,7 +58,7 @@ typedef struct yhm_element_s {
 
 /**
  * typedef	yhm_bucket_t
- *		Structure used to store the values associated with an hash value.
+ *		Structure used to store the values associated with a hash value.
  * @field	nbr_elements	Elements count for this bucket.
  * @field	elements	Pointer to the first element.
  */
@@ -111,7 +111,7 @@ yhashmap_t *yhm_new(size_t size, yhm_function_t destroy_func, void *destroy_data
 
 /**
  * @function	yhm_delete
- *		Destroy an hash map.
+ *		Destroy a hash map.
  * @param	hash	Pointer to the hash map.
  */
 void yhm_delete(yhashmap_t *hashmap);
@@ -128,43 +128,43 @@ yhm_hash_value_t yhm_hash(const char *key);
 
 /**
  * @function	yhm_add
- *		Add an element to an hash map.
+ *		Add an element to a hash map.
  * @param	hashmap	Pointer to the hash map.
- * @param	key		Key used to index the element.
- * @param	data		The element's data.
+ * @param	key	Key used to index the element.
+ * @param	data	The element's data.
  */
 void yhm_add(yhashmap_t *hashmap, char *key, void *data); 
 
 /**
  * @function	yhm_search
- *		Search an element in an hash map, from its key.
+ *		Search an element in a hash map, from its key.
  * @param	hashmap	Pointer to the hash map.
- * @param	key		Key used to index the element.
+ * @param	key	Key used to index the element.
  * @return	A pointer to the element's data.
  */
 void *yhm_search(yhashmap_t *hashmap, const char *key);
 
 /*
  * @function	yhm_remove
- * 		Remove an element from an hash map.
+ * 		Remove an element from a hash map.
  * @param	hashmap	Pointer to the hash map.
- * @param	key		Key used to index the element.
+ * @param	key	Key used to index the element.
  * @return	1 if the elemetn was found, 0 otherwise.
  */
 char yhm_remove(yhashmap_t *hashmap, const char *key);
 
 /**
  * @function	yhm_resize
- *		Resize an hashmap.
- * @param	hashmap	Pointer to the hashmap.
- * @param	size		The new size.
+ *		Resize a hash map.
+ * @param	hashmap	Pointer to the hash map.
+ * @param	size	The new size.
  */
 void yhm_resize(yhashmap_t *hashmap, size_t size);
 
 /**
  * @function	yhm_foreach
- *		Apply a function on every elements of an hash map.
- * @param	hashmap	Pointer to the hash map.
+ *		Apply a function on every elements of a hash map.
+ * @param	hashmap		Pointer to the hash map.
  * @param	func		Pointer to the executed function.
  * @param	user_data	Pointer to some user data.
  */
@@ -174,4 +174,4 @@ void yhm_foreach(yhashmap_t *hashmap, yhm_function_t func, void *user_data);
 }
 #endif /* __cplusplus || c_plusplus */
 
-#endif /* __YHASHTABLE_H__ */
+#endif /* __YHASHMAP_H__ */
