@@ -1,21 +1,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "yhashtable.h"
+#include "yhashmap.h"
 
 /*
- * yht_new()
- * Creates a new hash table.
+ * yhm_new()
+ * Creates a new hash map.
  */
-yhashtable_t *yht_new(size_t size, yht_function_t destroy_func, void *destroy_data) {
-	yhashtable_t	*hash;
+yhashmap_t *yhm_new(size_t size, yhm_function_t destroy_func, void *destroy_data) {
+	yhashmap_t	*hash;
 
 #ifdef USE_BOEHM_GC
-	hash = (yhashtable_t*)GC_MALLOC(sizeof(yhashtable_t));
-	hash->buckets = (yht_bucket_t*)GC_MALLOC(size * sizeof(yht_bucket_t));
+	hash = (yhashmap_t*)GC_MALLOC(sizeof(yhashmap_t));
+	hash->buckets = (yhm_bucket_t*)GC_MALLOC(size * sizeof(yhm_bucket_t));
 #else
-	hash = (yhashtable_t*)calloc(1, sizeof(yhashtable_t));
-	hash->buckets = (yht_bucket_t*)calloc(size, sizeof(yht_bucket_t));
+	hash = (yhashmap_t*)calloc(1, sizeof(yhashmap_t));
+	hash->buckets = (yhm_bucket_t*)calloc(size, sizeof(yhm_bucket_t));
 #endif /* USE_BOEM_GC */
 	hash->size = size;
 	hash->used = 0;
@@ -25,22 +25,22 @@ yhashtable_t *yht_new(size_t size, yht_function_t destroy_func, void *destroy_da
 }
 
 /*
- * yht_delete
- * Destroy an hash table.
+ * yhm_delete
+ * Destroy an hash map.
  */
-void yht_delete(yhashtable_t *hashtable) {
+void yhm_delete(yhashmap_t *hashmap) {
 	/* remove elements */
-	if (hashtable->used > 0) {
+	if (hashmap->used > 0) {
 		size_t		offset, offset2;
-		yht_bucket_t	*bucket;
-		yht_element_t	*element, *old_element;
+		yhm_bucket_t	*bucket;
+		yhm_element_t	*element, *old_element;
 
-		for (offset = 0; offset < hashtable->size; offset++) {
-			bucket = &(hashtable->buckets[offset]);
+		for (offset = 0; offset < hashmap->size; offset++) {
+			bucket = &(hashmap->buckets[offset]);
 			element = bucket->elements;
 			for (offset2 = 0; offset2 < bucket->nbr_elements; offset2++) {
-				if (hashtable->destroy_func != NULL)
-					hashtable->destroy_func(element->key, element->data, hashtable->destroy_data);
+				if (hashmap->destroy_func != NULL)
+					hashmap->destroy_func(element->key, element->data, hashmap->destroy_data);
 				old_element = element;
 				element = element->next;
 #ifdef USE_BOEHM_GC
@@ -51,22 +51,22 @@ void yht_delete(yhashtable_t *hashtable) {
 			}
 		}
 	}
-	/* remove buckets and the hash table itself */
+	/* remove buckets and the hash map itself */
 #ifdef USE_BOEHM_GC
-	GC_FREE(hashtable->buckets);
-	GC_FREE(hashtable);
+	GC_FREE(hashmap->buckets);
+	GC_FREE(hashmap);
 #else
-	free(hashtable->buckets);
-	free(hashtable);
+	free(hashmap->buckets);
+	free(hashmap);
 #endif /* USE_BOEHM_GC */
 }
 
 /*
- * yht_hash()
+ * yhm_hash()
  * Compute the hash value of a key, using the SDBM algorithm.
  */
-yht_hash_value_t yht_hash(const char *key) {
-	yht_hash_value_t	hash_value;
+yhm_hash_value_t yhm_hash(const char *key) {
+	yhm_hash_value_t	hash_value;
 
 	for (hash_value = 0; *key; key++)
 		hash_value = *key + (hash_value << 6) + (hash_value << 16) - hash_value;
@@ -74,34 +74,34 @@ yht_hash_value_t yht_hash(const char *key) {
 }
 
 /*
- * yht_add
- * Add an element to an hash table.
+ * yhm_add
+ * Add an element to an hash map.
  */
-void yht_add(yhashtable_t *hashtable, char *key, void *data) {
+void yhm_add(yhashmap_t *hashmap, char *key, void *data) {
 	float			load_factor;
-	yht_hash_value_t	hash_value;
-	yht_bucket_t		*bucket;
-	yht_element_t		*element;
+	yhm_hash_value_t	hash_value;
+	yhm_bucket_t		*bucket;
+	yhm_element_t		*element;
 
 	/* resize the able if its load factor would excess the limit */
-	load_factor = (float)(hashtable->used + 1) / hashtable->size;
-	if (load_factor > YHT_MAX_LOAD_FACTOR) {
-		yht_resize(hashtable, (hashtable->size * 2));
+	load_factor = (float)(hashmap->used + 1) / hashmap->size;
+	if (load_factor > YHM_MAX_LOAD_FACTOR) {
+		yhm_resize(hashmap, (hashmap->size * 2));
 		printf("done\n");
 	}
 	/* compute the key's hash value */
-	hash_value = yht_hash(key);
-	hash_value %= hashtable->size;
+	hash_value = yhm_hash(key);
+	hash_value %= hashmap->size;
 	/* create the new element */
 #ifdef USE_BOEHM_GC
-	element = (yht_element_t*)GC_MALLOC(sizeof(yht_element_t));
+	element = (yhm_element_t*)GC_MALLOC(sizeof(yhm_element_t));
 #else
-	element = (yht_element_t*)calloc(1, sizeof(yht_element_t));
+	element = (yhm_element_t*)calloc(1, sizeof(yhm_element_t));
 #endif /* USE_BOEHM_GC */
 	element->key = key;
 	element->data = data;
 	/* checking the bucket */
-	bucket = &(hashtable->buckets[hash_value]);
+	bucket = &(hashmap->buckets[hash_value]);
 	if (bucket->nbr_elements == 0) {
 		/* add the first element */
 		bucket->elements = element;
@@ -115,25 +115,25 @@ void yht_add(yhashtable_t *hashtable, char *key, void *data) {
 	}
 	/* update the bucket */
 	bucket->nbr_elements++;
-	/* update the hash table */
-	hashtable->used++;
+	/* update the hash map */
+	hashmap->used++;
 }
 
 /*
- * yht_search()
- * Search an element in an hash table, from its key.
+ * yhm_search()
+ * Search an element in an hash map, from its key.
  */
-void *yht_search(yhashtable_t *hashtable, const char *key) {
-	yht_hash_value_t	hash_value;
-	yht_bucket_t		*bucket;
-	yht_element_t		*element;
+void *yhm_search(yhashmap_t *hashmap, const char *key) {
+	yhm_hash_value_t	hash_value;
+	yhm_bucket_t		*bucket;
+	yhm_element_t		*element;
 	size_t			offset;
 
 	/* compute the key's hash value */
-	hash_value = yht_hash(key);
-	hash_value %= hashtable->size;
+	hash_value = yhm_hash(key);
+	hash_value %= hashmap->size;
 	/* retreiving the bucket */
-	bucket = &(hashtable->buckets[hash_value]);
+	bucket = &(hashmap->buckets[hash_value]);
 	if (bucket->nbr_elements == 0)
 		return (NULL);
 	if (bucket->nbr_elements == 1)
@@ -148,28 +148,28 @@ void *yht_search(yhashtable_t *hashtable, const char *key) {
 }
 
 /*
- * yht_remove()
- * Remove an element from an hash table.
+ * yhm_remove()
+ * Remove an element from an hash map.
  */
-char yht_remove(yhashtable_t *hashtable, const char *key) {
-	yht_hash_value_t	hash_value;
-	yht_bucket_t		*bucket;
-	yht_element_t		*element;
+char yhm_remove(yhashmap_t *hashmap, const char *key) {
+	yhm_hash_value_t	hash_value;
+	yhm_bucket_t		*bucket;
+	yhm_element_t		*element;
 	size_t			offset;
 	char			found = 0;
 	float			load_factor;
 
 	/* compute the key's hash value */
-	hash_value = yht_hash(key);
-	hash_value %= hashtable->size;
+	hash_value = yhm_hash(key);
+	hash_value %= hashmap->size;
 	/* retreiving the bucket */
-	bucket = &(hashtable->buckets[hash_value]);
+	bucket = &(hashmap->buckets[hash_value]);
 	if (bucket->nbr_elements == 0)
 		return (0);
 	if (bucket->nbr_elements == 1) {
 		found = 1;
-		if (hashtable->destroy_func)
-			hashtable->destroy_func(bucket->elements->key, bucket->elements->data, hashtable->destroy_data);
+		if (hashmap->destroy_func)
+			hashmap->destroy_func(bucket->elements->key, bucket->elements->data, hashmap->destroy_data);
 #ifdef USE_BOEHM_GC
 		GC_FREE(bucket->elements);
 #else
@@ -187,8 +187,8 @@ char yht_remove(yhashtable_t *hashtable, const char *key) {
 				element->previous->next = element->next;
 				element->next->previous = element->previous;
 				/* call the destroy function */
-				if (hashtable->destroy_func)
-					hashtable->destroy_func(element->key, element->data, hashtable->destroy_data);
+				if (hashmap->destroy_func)
+					hashmap->destroy_func(element->key, element->data, hashmap->destroy_data);
 #ifdef USE_BOEHM_GC
 				GC_FREE(element);
 #else
@@ -201,33 +201,33 @@ char yht_remove(yhashtable_t *hashtable, const char *key) {
 	}
 	if (found) {
 		bucket->nbr_elements--;
-		hashtable->used--;
-		/* resize the table if its load factor will fall under the limit */
-		load_factor = (float)(hashtable->used + 1) / hashtable->size;
-		if (load_factor < YHT_MIN_LOAD_FACTOR)
-			yht_resize(hashtable, (hashtable->size / 2));
+		hashmap->used--;
+		/* resize the map if its load factor will fall under the limit */
+		load_factor = (float)(hashmap->used + 1) / hashmap->size;
+		if (load_factor < YHM_MIN_LOAD_FACTOR)
+			yhm_resize(hashmap, (hashmap->size / 2));
 	}
 	return (found);
 }
 
 /*
- * yht_resize
- * Resize an hashtable.
+ * yhm_resize
+ * Resize an hashmap.
  */
-void yht_resize(yhashtable_t *hashtable, size_t size) {
-	yhashtable_t	*new_hashtable;
+void yhm_resize(yhashmap_t *hashmap, size_t size) {
+	yhashmap_t	*new_hashmap;
 	size_t		offset, offset2;
-	yht_bucket_t	*bucket, *old_buckets;
-	yht_element_t	*element, *old_element;
+	yhm_bucket_t	*bucket, *old_buckets;
+	yhm_element_t	*element, *old_element;
 
-	new_hashtable = yht_new(size, NULL, NULL);
-	for (offset = 0; offset < hashtable->size; offset++) {
-		bucket = &(hashtable->buckets[offset]);
+	new_hashmap = yhm_new(size, NULL, NULL);
+	for (offset = 0; offset < hashmap->size; offset++) {
+		bucket = &(hashmap->buckets[offset]);
 		if (bucket->nbr_elements == 0)
 			continue;
 		element = bucket->elements;
 		for (offset2 = 0; offset2 < bucket->nbr_elements; offset2++) {
-			yht_add(new_hashtable, element->key, element->data);
+			yhm_add(new_hashmap, element->key, element->data);
 			old_element = element;
 			element = element->next;
 #ifdef USE_BOEHM_GC
@@ -237,37 +237,37 @@ void yht_resize(yhashtable_t *hashtable, size_t size) {
 #endif /* USE_BOEHM_GC */
 		}
 	}
-	hashtable->size = size;
+	hashmap->size = size;
 	/* moving the list of buckets */
-	old_buckets = hashtable->buckets;
-	hashtable->buckets = new_hashtable->buckets;
+	old_buckets = hashmap->buckets;
+	hashmap->buckets = new_hashmap->buckets;
 	/* free memory */
 #ifdef USE_BOEHM_GC
 	GC_FREE(old_buckets);
-	GC_FREE(new_hashtable);
+	GC_FREE(new_hashmap);
 #else
 	free(old_buckets);
-	free(new_hashtable);
+	free(new_hashmap);
 #endif /* USE_BOEHM_GC */
 }
 
 /*
- * yht_foreach
- * Apply a function on every elements of an hash table.
+ * yhm_foreach
+ * Apply a function on every elements of an hash map.
  */
-void yht_foreach(yhashtable_t *hashtable, yht_function_t func, void *user_data) {
+void yhm_foreach(yhashmap_t *hashmap, yhm_function_t func, void *user_data) {
 	size_t		offset, nbr_processed, offset2;
-	yht_bucket_t	*bucket;
-	yht_element_t	*element;
+	yhm_bucket_t	*bucket;
+	yhm_element_t	*element;
 
-	for (offset = nbr_processed = 0; offset < hashtable->size; offset++) {
-		bucket = &(hashtable->buckets[offset]);
+	for (offset = nbr_processed = 0; offset < hashmap->size; offset++) {
+		bucket = &(hashmap->buckets[offset]);
 		if (bucket->nbr_elements == 0)
 			continue;
 		element = bucket->elements;
 		for (offset2 = 0; offset2 < bucket->nbr_elements; offset2++) {
 			func(element->key, element->data, user_data);
-			if (++nbr_processed == hashtable->used)
+			if (++nbr_processed == hashmap->used)
 				return;
 			element = element->next;
 		}
