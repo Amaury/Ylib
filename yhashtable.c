@@ -7,7 +7,7 @@
  * yht_new()
  * Creates a new hash table.
  */
-yhashtable_t *yht_new(size_t size, yht_function_t destroy_func) {
+yhashtable_t *yht_new(size_t size, yht_function_t destroy_func, void *destroy_data) {
 	yhashtable_t	*hash;
 
 #ifdef USE_BOEHM_GC
@@ -20,6 +20,7 @@ yhashtable_t *yht_new(size_t size, yht_function_t destroy_func) {
 	hash->size = size;
 	hash->used = 0;
 	hash->destroy_func = destroy_func;
+	hash->destroy_data = destroy_data;
 	return (hash);
 }
 
@@ -28,9 +29,29 @@ yhashtable_t *yht_new(size_t size, yht_function_t destroy_func) {
  * Destroy an hash table.
  */
 void yht_delete(yhashtable_t *hashtable) {
+	/* remove elements */
 	if (hashtable->used > 0) {
-		printf("leak ?\n");
+		size_t		offset, offset2;
+		yht_bucket_t	*bucket;
+		yht_element_t	*element, *old_element;
+
+		for (offset = 0; offset < hashtable->size; offset++) {
+			bucket = &(hashtable->buckets[offset]);
+			element = bucket->elements;
+			for (offset2 = 0; offset2 < bucket->nbr_elements; offset2++) {
+				if (hashtable->destroy_func != NULL)
+					hashtable->destroy_func(element->key, element->data, hashtable->destroy_data);
+				old_element = element;
+				element = element->next;
+#ifdef USE_BOEHM_GC
+				GC_FREE(old_element);
+#else
+				free(old_element);
+#endif
+			}
+		}
 	}
+	/* remove buckets and the hash table itself */
 #ifdef USE_BOEHM_GC
 	GC_FREE(hashtable->buckets);
 	GC_FREE(hashtable);
@@ -130,7 +151,7 @@ void *yht_search(yhashtable_t *hashtable, const char *key) {
  * yht_remove()
  * Remove an element from an hash table.
  */
-char yht_remove(yhashtable_t *hashtable, const char *key, void *user_data) {
+char yht_remove(yhashtable_t *hashtable, const char *key) {
 	yht_hash_value_t	hash_value;
 	yht_bucket_t		*bucket;
 	yht_element_t		*element;
@@ -148,7 +169,7 @@ char yht_remove(yhashtable_t *hashtable, const char *key, void *user_data) {
 	if (bucket->nbr_elements == 1) {
 		found = 1;
 		if (hashtable->destroy_func)
-			hashtable->destroy_func(bucket->elements->key, bucket->elements->data, user_data);
+			hashtable->destroy_func(bucket->elements->key, bucket->elements->data, hashtable->destroy_data);
 #ifdef USE_BOEHM_GC
 		GC_FREE(bucket->elements);
 #else
@@ -167,7 +188,7 @@ char yht_remove(yhashtable_t *hashtable, const char *key, void *user_data) {
 				element->next->previous = element->previous;
 				/* call the destroy function */
 				if (hashtable->destroy_func)
-					hashtable->destroy_func(element->key, element->data, user_data);
+					hashtable->destroy_func(element->key, element->data, hashtable->destroy_data);
 #ifdef USE_BOEHM_GC
 				GC_FREE(element);
 #else
@@ -190,10 +211,8 @@ char yht_remove(yhashtable_t *hashtable, const char *key, void *user_data) {
 }
 
 /*
- * @function    yht_resize
- *              Resize an hashtable.
- * @param       hashtable       Pointer to the hashtable.
- * @param       size            The new size.
+ * yht_resize
+ * Resize an hashtable.
  */
 void yht_resize(yhashtable_t *hashtable, size_t size) {
 	yhashtable_t	*new_hashtable;
@@ -201,8 +220,7 @@ void yht_resize(yhashtable_t *hashtable, size_t size) {
 	yht_bucket_t	*bucket, *old_buckets;
 	yht_element_t	*element, *old_element;
 
-	printf("RESIZE to %d\n", size);
-	new_hashtable = yht_new(size, NULL);
+	new_hashtable = yht_new(size, NULL, NULL);
 	for (offset = 0; offset < hashtable->size; offset++) {
 		bucket = &(hashtable->buckets[offset]);
 		if (bucket->nbr_elements == 0)
@@ -231,4 +249,27 @@ void yht_resize(yhashtable_t *hashtable, size_t size) {
 	free(old_buckets);
 	free(new_hashtable);
 #endif /* USE_BOEHM_GC */
+}
+
+/*
+ * yht_foreach
+ * Apply a function on every elements of an hash table.
+ */
+void yht_foreach(yhashtable_t *hashtable, yht_function_t func, void *user_data) {
+	size_t		offset, nbr_processed, offset2;
+	yht_bucket_t	*bucket;
+	yht_element_t	*element;
+
+	for (offset = nbr_processed = 0; offset < hashtable->size; offset++) {
+		bucket = &(hashtable->buckets[offset]);
+		if (bucket->nbr_elements == 0)
+			continue;
+		element = bucket->elements;
+		for (offset2 = 0; offset2 < bucket->nbr_elements; offset2++) {
+			func(element->key, element->data, user_data);
+			if (++nbr_processed == hashtable->used)
+				return;
+			element = element->next;
+		}
+	}
 }

@@ -19,7 +19,7 @@ extern "C" {
 #endif /* USE_BOEHM_GC */
 
 /** @define YHT_MAX_LOAD_FACTOR	Maximum load factor of an hash table before increasing it. */
-#define YHT_MAX_LOAD_FACTOR	0.7
+#define YHT_MAX_LOAD_FACTOR	5.7
 
 /** @define YHT_MIN_LOAD_FACTOR Minimum load factor of an hash table before reducing it. */
 #define YHT_MIN_LOAD_FACTOR	0.25
@@ -91,12 +91,14 @@ typedef long int yht_hash_value_t;
  * @field	used		Current number of elements stored in the hash table.
  * @field	buckets		Array of buckets.
  * @field	destroy_func	Pointer to the function called when an element is removed.
+ * @field	destroy_data	Pointer to some user data given to the destroy function.
  */
 typedef struct yhashtable_s {
 	size_t		size;
 	size_t		used;
 	yht_bucket_t	*buckets;
 	yht_function_t	destroy_func;
+	void		*destroy_data;
 } yhashtable_t;
 
 /* ****************** FUNCTIONS **************** */
@@ -105,9 +107,10 @@ typedef struct yhashtable_s {
  *		Creates a new hash table.
  * @param	size		Initial size of the hash table.
  * @param	destroy_func	Pointer to the function called when an element is removed.
+ * @param	destroy_data	Pointer to some suer data given to the destroy function.
  * @return	The created hash table.
  */
-yhashtable_t *yht_new(size_t size, yht_function_t destroy_func);
+yhashtable_t *yht_new(size_t size, yht_function_t destroy_func, void *destroy_data);
 
 /**
  * @function	yht_delete
@@ -149,10 +152,9 @@ void *yht_search(yhashtable_t *hashtable, const char *key);
  * 		Remove an element from an hash table.
  * @param	hashtable	Pointer to the hash table.
  * @param	key		Key used to index the element.
- * @param	user_data	User data, passed to the destroy function.
  * @return	1 if the elemetn was found, 0 otherwise.
  */
-char yht_remove(yhashtable_t *hashtable, const char *key, void *user_data);
+char yht_remove(yhashtable_t *hashtable, const char *key);
 
 /**
  * @function	yht_resize
@@ -161,6 +163,15 @@ char yht_remove(yhashtable_t *hashtable, const char *key, void *user_data);
  * @param	size		The new size.
  */
 void yht_resize(yhashtable_t *hashtable, size_t size);
+
+/**
+ * @function	yht_foreach
+ *		Apply a function on every elements of an hash table.
+ * @param	hashtable	Pointer to the hash table.
+ * @param	func		Pointer to the executed function.
+ * @param	user_data	Pointer to some user data.
+ */
+void yht_foreach(yhashtable_t *hashtable, yht_function_t func, void *user_data);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
