@@ -14,6 +14,8 @@
 extern "C" {
 #endif /* __cplusplus || c_plusplus */
 
+#include "ydefs.h"
+
 #ifdef USE_BOEHM_GC
 # include "gc.h"
 #endif /* USE_BOEHM_GC */
@@ -117,16 +119,6 @@ yhashmap_t *yhm_new(size_t size, yhm_function_t destroy_func, void *destroy_data
 void yhm_delete(yhashmap_t *hashmap);
 
 /**
- * @function	yhm_hash
- *		Compute the hash value of a key, using the SDBM algorithm.
- * @see		http://www.cse.yorku.ca/~oz/hash.html
- * @see		http://en.literateprograms.org/Hash_function_comparison_%28C,_sh%29#chunk
- * @param	Key	The data to hash.
- * @return	The computed hash value.
- */
-yhm_hash_value_t yhm_hash(const char *key);
-
-/**
  * @function	yhm_add
  *		Add an element to a hash map.
  * @param	hashmap	Pointer to the hash map.
@@ -149,9 +141,9 @@ void *yhm_search(yhashmap_t *hashmap, const char *key);
  * 		Remove an element from a hash map.
  * @param	hashmap	Pointer to the hash map.
  * @param	key	Key used to index the element.
- * @return	1 if the elemetn was found, 0 otherwise.
+ * @return	YTRUE if the element was found, YFALSE otherwise.
  */
-char yhm_remove(yhashmap_t *hashmap, const char *key);
+ybool_t yhm_remove(yhashmap_t *hashmap, const char *key);
 
 /**
  * @function	yhm_resize

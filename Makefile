@@ -59,9 +59,9 @@ RM      =	/bin/rm -f
 OBJS    =	$(SRC:.c=.o)
 
 # Objects compilation options
-CFLAGS  =	-pedantic -Wall -Wmissing-prototypes \
+CFLAGS  =	-ansi -std=c90 -pedantic-errors -Wall -Wextra -Wmissing-prototypes \
 		  -Wno-long-long $(IPATH) -D_GNU_SOURCE \
-		  -D_LARGEFILE_SOURCE -D_THREAD_SAFE -fPIC -std=c9x
+		  -D_LARGEFILE_SOURCE -D_THREAD_SAFE -fPIC
 CFLAGS_CYGWIN =	-Wall -Wmissing-prototypes -Wno-long-long $(IPATH) \
 		  -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_THREAD_SAFE
 
@@ -96,3 +96,7 @@ docclean:
 
 .c.o:
 	$(CC) $(CFLAGS) -c $<
+
+testhash:
+	gcc -I. -Igc/include -DUSE_BOEHM_GC -DFIND_LINK -ansi-std=c90 -Wall -Wextra -pedantic-errors -Wmissing-prototypes -Wno-long-long -D_THREAD_SAFE -fPIC yhashtable.c testhash.c gc/.libs/libgc.a -lpthread -o testhash
+

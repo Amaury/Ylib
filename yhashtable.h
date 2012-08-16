@@ -14,6 +14,8 @@
 extern "C" {
 #endif /* __cplusplus || c_plusplus */
 
+#include "ydefs.h"
+
 #ifdef USE_BOEHM_GC
 # include "gc.h"
 #endif /* USE_BOEHM_GC */
@@ -138,16 +140,6 @@ yhashtable_t *yht_new(yht_size_t size, yht_function_t destroy_func, void *destro
 void yht_delete(yhashtable_t *hashtable);
 
 /**
- * @function	yht_hash
- *		Compute the hash value of a key, using the SDBM algorithm.
- * @see		http://www.cse.yorku.ca/~oz/hash.html
- * @see		http://en.literateprograms.org/Hash_function_comparison_%28C,_sh%29#chunk
- * @param	Key	The data to hash.
- * @return	The computed hash value.
- */
-yht_hash_value_t yht_hash(const char *key);
-
-/**
  * @function	yht_add_from_string
  *		Add an element to a hash table, using a string key.
  * @param	hashtable	Pointer to the hash table.
@@ -188,18 +180,18 @@ void *yht_search_from_int(yhashtable_t *hashtable, size_t key);
  * 		Remove an element from a hash table, using its string key.
  * @param	hashtable	Pointer to the hash table.
  * @param	key		Key used to index the element.
- * @return	1 if the element was found, 0 otherwise.
+ * @return	YTRUE if the element was found, YFALSE otherwise.
  */
-char yht_remove_from_string(yhashtable_t *hashtable, const char *key);
+ybool_t yht_remove_from_string(yhashtable_t *hashtable, const char *key);
 
 /**
  * @function	yht_remove_from_int
  * 		Remove an element from a hash table, using its integer key.
  * @param	hashtable	Pointer to the hash table.
  * @param	key		Key used to index the element.
- * @return	1 if the element was found, 0 otherwise.
+ * @return	YTRUE if the element was found, YFALSE otherwise.
  */
-char yht_remove_from_int(yhashtable_t *hashtable, size_t key);
+ybool_t yht_remove_from_int(yhashtable_t *hashtable, size_t key);
 
 /**
  * @function	yht_resize

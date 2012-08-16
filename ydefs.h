@@ -18,6 +18,24 @@ extern "C" {
 
 #include <stdlib.h>
 
+/* checks the C compiler version */
+#if defined (__STDC__)
+/*! @define COMPILER_C89 The compiler is compatible with C89. */
+# define COMPILER_C89
+# if defined(__STDC_VERSION__)
+/*! @define COMPILER_C90 The compiler is compatible with C90. */
+#  define COMPILER_C90
+#  if (__STDC_VERSION__ >= 199409L)
+/*! @define COMPILER_C94 The compiler is compatible with C94. */
+#   define COMPILER_C94
+#  endif
+#  if (__STDC_VERSION__ >= 199901L)
+/*! @define COMPILER_C99 The compiler is compatible with C99. */
+#   define COMPILER_C99
+#  endif
+# endif
+#endif
+
 /*!
  * @enum	ybool_e
  *		Enumeration of boolean constants.
@@ -180,7 +198,7 @@ typedef long double f96_t;
 /*! @define IS_SPACE True if the character is a space. */
 #define	IS_SPACE(c)	(c == SPACE || c == TAB || c == LF || c == CR)
 
-/*! @define IS_CHAR True if the character is a character. */
+/*! @define IS_CHAR True if the character is an ASCII  character. */
 #define IS_CHAR(c)	((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
    
 /*! @define IS_NUM True if the character is a numeric digit. */
@@ -192,16 +210,22 @@ typedef long double f96_t;
 /*! @define ARRAY_SIZE Return the number of elements in an array. */
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof(a[0]))
 
-/*! @define free0 Test pointers before freeing, and set them to NULL. */
-#define free0(p)	((void*)p ? (free((void*)p), 0) : 0, p = (void*)0)
-
-/*!
- * @function	malloc0
- *		Like malloc, but fill the allocated space with zeros.
- * @param	size	The size to allocate.
- * @return	A pointer to the allocated space, or NULL.
- */
-void *malloc0(size_t size);
+/* ******* MEMOTY MANAGEMENT ********** */
+#ifdef USE_BOEHM_GC
+/*! @define YMALLOC Memory allocation macro. */
+# define	YMALLOC(s)	(GC_MALLOC(s))
+/*! @define YCALLOC Memory allocation macro. */
+# define	YCALLOC(n, s)	(GC_MALLOC(n * s))
+/*! @define YFREE Memory liberation macro. */
+# define	YFREE(p)	((void*)p ? (GC_FREE((void*)p), NULL) : NULL, p = NULL)
+#else
+/*! @define YCALLOC Memory allocation macro. */
+# define	YMALLOC(s)	(calloc(1, s))
+/*! @define YCALLOC Memory allocation macro. */
+# define	YCALLOC(n, s)	(calloc(n, s))
+/*! @define YFREE Memory liberation macro. */
+# define	YFREE(p)	((void*)p ? (free((void*)p), NULL) : NULL, p = NULL)
+#endif /* USE_BOEHM_GC */
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
