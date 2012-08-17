@@ -64,11 +64,26 @@ typedef char* ystr_t;
 ystr_t ys_new(const char *s);
 
 /*!
+ * @function	ys_copy
+ *		Create a minimal ystring that contains a copy of the given string.
+ * @param	s	Original string that will be copied in the ystring.
+ * @return	A pointer to the created ystring.
+ */
+ystr_t ys_copy(const char *s);
+
+/*!
  * @function	ys_del
  *		Delete an existing ystring.
  * @param	s	A pointer to the ystring.
  */
 void ys_del(ystr_t *s);
+
+/*!
+ * @function	ys_free
+ *		Delete an existing ystring.
+ * @param	s	The ystring.
+ */
+void ys_free(ystr_t s);
 
 /*!
  * @function	ys_trunc

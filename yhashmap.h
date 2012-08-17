@@ -29,6 +29,7 @@ extern "C" {
 /**
  * @typedef	yhm_size_t
  *		Enum used to define the size of a hash map.
+ * @constant	YHM_SIZE_NANO		Size of ultra-light hash maps, for debug purposes (4).
  * @constant	YHM_SIZE_MINI		Minimal size of hash maps (32).
  * @constant	YHM_SIZE_MEDIUM		Medium size of hash maps (256).
  * @constant	YHM_SIZE_DEFAULT	Default size of hash maps (4K).
@@ -36,6 +37,7 @@ extern "C" {
  * @constant	YHM_SIZE_HUGE		Size of huge hash maps (1M).
  */
 typedef enum yhm_size_e {
+	YHM_SIZE_NANO		= 4,
 	YHM_SIZE_MINI		= 32,
 	YHM_SIZE_MEDIUM		= 256,
 	YHM_SIZE_DEFAULT	= 4096,
@@ -109,7 +111,7 @@ typedef struct yhashmap_s {
  * @param	destroy_data	Pointer to some suer data given to the destroy function.
  * @return	The created hash map.
  */
-yhashmap_t *yhm_new(size_t size, yhm_function_t destroy_func, void *destroy_data);
+yhashmap_t *yhm_new(yhm_size_t size, yhm_function_t destroy_func, void *destroy_data);
 
 /**
  * @function	yhm_delete

@@ -10,7 +10,7 @@ static yhm_hash_value_t _yhm_hash(const char *key);
  * yhm_new()
  * Creates a new hash map.
  */
-yhashmap_t *yhm_new(size_t size, yhm_function_t destroy_func, void *destroy_data) {
+yhashmap_t *yhm_new(yhm_size_t size, yhm_function_t destroy_func, void *destroy_data) {
 	yhashmap_t	*hash;
 
 	hash = (yhashmap_t*)YMALLOC(sizeof(yhashmap_t));

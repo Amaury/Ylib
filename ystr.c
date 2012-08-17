@@ -23,7 +23,7 @@ ystr_t ys_new(const char *s)
 	(strsz < YSTR_SIZE_HUGE) ? YSTR_SIZE_BIG : YSTR_SIZE_HUGE;
       totalsz = (((strsz + 1) / leap) + 1) * leap;
     }
-  if (!(res = (char*)malloc0(totalsz + sizeof(ystr_head_t))))
+  if (!(res = (char*)YMALLOC(totalsz + sizeof(ystr_head_t))))
     return (res);
   y = (ystr_head_t*)res;
   res += sizeof(ystr_head_t);
@@ -37,6 +37,30 @@ ystr_t ys_new(const char *s)
 }
 
 /*
+ * ys_copy()
+ * Create a minimal ystring that contains a copy of the given string.
+ */
+ystr_t ys_copy(const char *s) {
+	char 		*res;
+	unsigned int	strsz, totalsz;
+	ystr_head_t	*y;
+
+	strsz = (!s) ? 0 : strlen(s);
+	totalsz = strsz + 1;
+	if (!(res = (char*)YMALLOC(totalsz + sizeof(ystr_head_t))))
+		return (res);
+	y = (ystr_head_t*)res;
+	res += sizeof(ystr_head_t);
+	y->total = totalsz;
+	y->used = strsz;
+	if (!strsz)
+		*res = '\0';
+	else
+		strcpy(res, s);
+	return ((ystr_t)res);
+}
+
+/*
 ** ys_del()
 ** Delete an existing ystring.
 */
@@ -47,8 +71,21 @@ void ys_del(ystr_t *s)
   if (!s || !*s)
     return ;
   y = (ystr_head_t*)(*s - sizeof(ystr_head_t));
-  free0(y);
+  YFREE(y);
   *s = NULL;
+}
+
+/*
+ * ys_free()
+ * Delete an existing ystring.
+ */
+void ys_free(ystr_t s) {
+	ystr_head_t	*y;
+
+	if (!s)
+		return;
+	y = (ystr_head_t*)(s - sizeof(ystr_head_t));
+	YFREE(y);
 }
 
 /*
@@ -84,14 +121,14 @@ int ys_setsz(ystr_t *s, unsigned int sz)
   leap = (sz < YSTR_SIZE_BIG) ? YSTR_SIZE :
     (sz < YSTR_SIZE_HUGE) ? YSTR_SIZE_BIG : YSTR_SIZE_HUGE;
   totalsz = (((sz + 1) / leap) + 1) * leap;
-  if (!(ns = (char*)malloc0(totalsz + sizeof(ystr_head_t))))
+  if (!(ns = (char*)YMALLOC(totalsz + sizeof(ystr_head_t))))
     return (0);
   ny = (ystr_head_t*)ns;
   ns += sizeof(ystr_head_t);
   ny->total = totalsz;
   ny->used = y->used;
   memcpy(ns, s, y->used + 1);
-  free0(y);
+  YFREE(y);
   *s = ns;
   return (1);
 }
@@ -135,7 +172,7 @@ int ys_cat(ystr_t *dest, const char *src)
   leap = (strsz < YSTR_SIZE_BIG) ? YSTR_SIZE :
     (strsz < YSTR_SIZE_HUGE) ? YSTR_SIZE_BIG : YSTR_SIZE_HUGE;
   totalsz = (((strsz + 1) / leap) + 1) * leap;
-  if (!(ns = (char*)malloc0(totalsz + sizeof(ystr_head_t))))
+  if (!(ns = (char*)YMALLOC(totalsz + sizeof(ystr_head_t))))
     return (0);
   ny = (ystr_head_t*)ns;
   ns += sizeof(ystr_head_t);
@@ -143,7 +180,7 @@ int ys_cat(ystr_t *dest, const char *src)
   ny->used = strsz;
   memcpy(ns, *dest, y->used);
   memcpy(ns + y->used, src, srcsz + 1);
-  free0(y);
+  YFREE(y);
   *dest = ns;
   return (1);
 }
@@ -180,7 +217,7 @@ int ys_tac(ystr_t *dest, const char *src)
   leap = (strsz < YSTR_SIZE_BIG) ? YSTR_SIZE :
     (strsz < YSTR_SIZE_HUGE) ? YSTR_SIZE_BIG : YSTR_SIZE_HUGE;
   totalsz = (((strsz + 1) / leap) + 1) * leap;
-  if (!(ns = (char*)malloc0(totalsz + sizeof(ystr_head_t))))
+  if (!(ns = (char*)YMALLOC(totalsz + sizeof(ystr_head_t))))
     return (0);
   ny = (ystr_head_t*)ns;
   ns += sizeof(ystr_head_t);
@@ -188,7 +225,7 @@ int ys_tac(ystr_t *dest, const char *src)
   ny->used = strsz;
   memcpy(ns, src, srcsz);
   memcpy(ns + srcsz, *dest, y->used + 1);
-  free0(y);
+  YFREE(y);
   *dest = ns;
   return (1);
 }
@@ -222,7 +259,7 @@ int ys_ncat(ystr_t *dest, const char *src, unsigned int n)
   leap = (strsz < YSTR_SIZE_BIG) ? YSTR_SIZE :
     (strsz < YSTR_SIZE_HUGE) ? YSTR_SIZE_BIG : YSTR_SIZE_HUGE;
   totalsz = (((strsz + 1) / leap) + 1) * leap;
-  if (!(ns = (char*)malloc0(totalsz + sizeof(ystr_head_t))))
+  if (!(ns = (char*)YMALLOC(totalsz + sizeof(ystr_head_t))))
     return (0);
   ny = (ystr_head_t*)ns;
   ns += sizeof(ystr_head_t);
@@ -231,7 +268,7 @@ int ys_ncat(ystr_t *dest, const char *src, unsigned int n)
   strcpy(ns, *dest);
   strncpy(ns + y->used, src, n);
   ns[ny->used] = '\0';
-  free0(y);
+  YFREE(y);
   *dest = ns;
   return (1);
 }
@@ -269,7 +306,7 @@ int ys_ntac(ystr_t *dest, const char *src, unsigned int n)
   leap = (strsz < YSTR_SIZE_BIG) ? YSTR_SIZE :
     (strsz < YSTR_SIZE_HUGE) ? YSTR_SIZE_BIG : YSTR_SIZE_HUGE;
   totalsz = (((strsz + 1) / leap) + 1) * leap;
-  if (!(ns = (char*)malloc0(totalsz + sizeof(ystr_head_t))))
+  if (!(ns = (char*)YMALLOC(totalsz + sizeof(ystr_head_t))))
     return (0);
   ny = (ystr_head_t*)ns;
   ns += sizeof(ystr_head_t);
@@ -277,7 +314,7 @@ int ys_ntac(ystr_t *dest, const char *src, unsigned int n)
   ny->used = strsz;
   memcpy(ns, src, n);
   memcpy(ns + n, *dest, y->used + 1);
-  free0(y);
+  YFREE(y);
   *dest = ns;
   return (1);
 }
@@ -294,7 +331,7 @@ ystr_t ys_dup(const ystr_t s)
   if (!s)
     return (ys_new(""));
   y = (ystr_head_t*)(s - sizeof(ystr_head_t));
-  if (!(ns = (char*)malloc0(y->total + sizeof(ystr_head_t))))
+  if (!(ns = (char*)YMALLOC(y->total + sizeof(ystr_head_t))))
     return (ns);
   ny = (ystr_head_t*)ns;
   ns += sizeof(ystr_head_t);
@@ -318,7 +355,7 @@ char *ys_string(const ystr_t s)
   if (!s)
     return (NULL);
   y = (ystr_head_t*)(s - sizeof(ystr_head_t));
-  if (!(res = malloc0(y->used + 1)))
+  if (!(res = (char*)YMALLOC(y->used + 1)))
     return (NULL);
   return (memcpy(res, s, y->used + 1));
 }
@@ -462,7 +499,7 @@ int ys_putc(ystr_t *s, char c)
   leap = (y->used < YSTR_SIZE_BIG) ? YSTR_SIZE :
     (y->used < YSTR_SIZE_HUGE) ? YSTR_SIZE_BIG : YSTR_SIZE_HUGE;
   totalsz = (((y->used + 2) / leap) + 1) * leap;
-  if (!(ns = (char*)malloc0(totalsz + sizeof(ystr_head_t))))
+  if (!(ns = (char*)YMALLOC(totalsz + sizeof(ystr_head_t))))
     return (0);
   ny = (ystr_head_t*)ns;
   ns += sizeof(ystr_head_t);
@@ -470,7 +507,7 @@ int ys_putc(ystr_t *s, char c)
   ny->used = y->used + 1;
   *ns = c;
   memcpy(ns + 1, *s, y->used + 1);
-  free0(y);
+  YFREE(y);
   *s = ns;
   return (1);
 }
@@ -527,7 +564,7 @@ int ys_printf(ystr_t *s, char *format, ...)
   char *ns;
 
   y = (ystr_head_t*)(*s - sizeof(ystr_head_t));
-  if (!(ns = malloc0(y->total + sizeof(ystr_head_t))))
+  if (!(ns = (char*)YMALLOC(y->total + sizeof(ystr_head_t))))
     return (0);
   ny = (ystr_head_t*)ns;
   ns += sizeof(ystr_head_t);
@@ -535,11 +572,11 @@ int ys_printf(ystr_t *s, char *format, ...)
   va_start(p_list, format);
   if ((i = vsnprintf(ns, y->total, format, p_list)) == -1)
     {
-      free0(ny);
+      YFREE(ny);
       return (0);
     }
   ny->used = i;
-  free0(y);
+  YFREE(y);
   *s = ns;
   va_end(p_list);
   return (1);

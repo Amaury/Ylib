@@ -5,6 +5,10 @@
 # Library's static name (libNAME.a)
 NAME	=	liby.a
 
+SRC_HASH =	yhashmap.c	\
+		yhashtable.c	\
+		ystr.c
+
 # Name of source files (names.c)
 SRC       =	ymalloc.c	\
 		ystr.c		\
@@ -57,6 +61,7 @@ EXEOPT  =       -O2 # -g for debug
 CC      =	gcc
 RM      =	/bin/rm -f
 OBJS    =	$(SRC:.c=.o)
+OBJS_HASH =	$(SRC_HASH:.c=.o)
 
 # Objects compilation options
 CFLAGS  =	-ansi -std=c90 -pedantic-errors -Wall -Wextra -Wmissing-prototypes \
@@ -68,6 +73,10 @@ CFLAGS_CYGWIN =	-Wall -Wmissing-prototypes -Wno-long-long $(IPATH) \
 # #####################################################################
 
 .PHONY: lib cygwin clean all cygall doc docclean
+
+hash: $(OBJS_HASH) $(SRC_HASH)
+	ar -r $(NAME) $(OBJS_HASH)
+	ranlib $(NAME)
 
 $(NAME): $(OBJS) $(SRC)
 	ar -r $(NAME) $(OBJS)
@@ -96,7 +105,4 @@ docclean:
 
 .c.o:
 	$(CC) $(CFLAGS) -c $<
-
-testhash:
-	gcc -I. -Igc/include -DUSE_BOEHM_GC -DFIND_LINK -ansi-std=c90 -Wall -Wextra -pedantic-errors -Wmissing-prototypes -Wno-long-long -D_THREAD_SAFE -fPIC yhashtable.c testhash.c gc/.libs/libgc.a -lpthread -o testhash
 
