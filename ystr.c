@@ -380,7 +380,7 @@ ystr_t ys_concat(const char *s1, const char *s2)
 void ys_ltrim(ystr_t s)
 {
   ystr_head_t *y;
-  char *pt, *orig;
+  char *pt;
 
   y = (ystr_head_t*)(s - sizeof(ystr_head_t));
   for (pt = s;
@@ -389,7 +389,7 @@ void ys_ltrim(ystr_t s)
     ;
   if (pt == s)
     return ;
-  for (orig = s; *pt; ++pt, ++s)
+  for (; *pt; ++pt, ++s)
     *s = *pt;
   *s = '\0';
 }
@@ -438,12 +438,10 @@ void ys_trim(ystr_t s)
 */
 char ys_lshift(ystr_t s)
 {
-  ystr_head_t *y;
   char c;
 
   if (!s || !*s)
     return ('\0');
-  y = (ystr_head_t*)(s - sizeof(ystr_head_t));
   c = *s;
   *s = ' ';
   ys_ltrim(s);
