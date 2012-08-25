@@ -176,6 +176,16 @@ void *yht_search_from_string(yhashtable_t *hashtable, const char *key);
 void *yht_search_from_int(yhashtable_t *hashtable, size_t key);
 
 /**
+ * @function	yht_search_from_hashed_string
+ *		Search an element in a hash table, from its hashed string key.
+ * @param	hashtable	Pointer to the hash table.
+ * @param	hash_value	Hash value of the string.
+ * @param	key		String key used to index the element.
+ * @return	A pointer to the element's data.
+ */
+void *yht_search_from_hashed_string(yhashtable_t *hashtable, size_t hash_value, const char *key);
+
+/**
  * @function	yht_remove_from_string
  * 		Remove an element from a hash table, using its string key.
  * @param	hashtable	Pointer to the hash table.
@@ -209,6 +219,16 @@ void yht_resize(yhashtable_t *hashtable, size_t size);
  * @param	user_data	Pointer to some user data.
  */
 void yht_foreach(yhashtable_t *hashtable, yht_function_t func, void *user_data);
+
+/*!
+ * @function	yht_hash
+ *		Compute the hash value of a key, using the SDBM algorithm.
+ * @param	key	The string that will be hashed.
+ * @return	The string's hash value.
+ * @see 	http://www.cse.yorku.ca/~oz/hash.html
+ * @see		http://en.literateprograms.org/Hash_function_comparison_%28C,_sh%29
+ */
+yht_hash_value_t yht_hash(const char *key);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

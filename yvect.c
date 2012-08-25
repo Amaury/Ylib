@@ -5,22 +5,29 @@
 
 /*
 ** yv_new()
-** Create a new yvector.
+** Create a new yvector of the default size (4K).
 */
-yvect_t yv_new()
-{
-  void **nv;
-  yvect_head_t *y;
+yvect_t yv_new() {
+	return (yv_create(YVECT_SIZE_DEFAULT));
+}
 
-  if (!(nv = (void**)malloc0((YVECT_SIZE * sizeof(void*)) +
-			     sizeof(yvect_head_t))))
-    return (NULL);
-  y = (yvect_head_t*)nv;
-  nv = (void**)((int)nv + sizeof(yvect_head_t));
-  y->total = YVECT_SIZE;
-  y->used = 0;
-  *nv = NULL;
-  return ((yvect_t)nv);
+/*
+ * yv_create()
+ * Creates a new yvector of the given size.
+ */
+yvect_t yv_create(yv_size_t size) {
+	void		**nv;
+	yvect_head_t	*y;
+
+	if (!(nv = (void**)YMALLOC((size * sizeof(void*)) +
+				   sizeof(yvect_head_t))))
+		return (NULL);
+	y = (yvect_head_t*)nv;
+	nv = (void**)((void*)nv + sizeof(yvect_head_t));
+	y->total = size;
+	y->used = 0;
+	*nv = NULL;
+	return ((yvect_t)nv);
 }
 
 /*
@@ -34,11 +41,11 @@ void yv_del(yvect_t *v, void (*f)(void*, void*), void *data)
 
   if (!v || !*v)
     return ;
-  y = (yvect_head_t*)((int)*v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)*v - sizeof(yvect_head_t));
   if (f)
     for (i = 0; i < y->used; ++i)
       f((*v)[i], data);
-  free0(y);
+  YFREE(y);
   *v = NULL;
 }
 
@@ -53,7 +60,7 @@ void yv_trunc(yvect_t v, void (*f)(void*, void*), void *data)
 
   if (!v || !*v)
     return ;
-  y = (yvect_head_t*)((int)*v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)*v - sizeof(yvect_head_t));
   if (f)
     for (i = 0; i < y->used; ++i)
       f(v[i], data);
@@ -65,7 +72,7 @@ void yv_trunc(yvect_t v, void (*f)(void*, void*), void *data)
 ** yv_setsz()
 ** Set the minimum size of a yvector.
 */
-int yv_setsz(yvect_t *v, unsigned int sz)
+int yv_setsz(yvect_t *v, size_t sz)
 {
   yvect_head_t *y, *ny;
   unsigned int totalsz, leap;
@@ -73,21 +80,21 @@ int yv_setsz(yvect_t *v, unsigned int sz)
 
   if (!v || !*v)
     return (0);
-  y = (yvect_head_t*)((int)**v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)**v - sizeof(yvect_head_t));
   if (sz < y->total)
     return (1);
-  leap = (sz < YVECT_SIZE_BIG) ? YVECT_SIZE :
+  leap = (sz < YVECT_SIZE_BIG) ? YVECT_SIZE_DEFAULT :
     (sz < YVECT_SIZE_HUGE) ? YVECT_SIZE_BIG : YVECT_SIZE_HUGE;
   totalsz = (((sz + 1) / leap) + 1) * leap;
-  if (!(nv = (void**)malloc0((totalsz * sizeof(void*)) +
+  if (!(nv = (void**)YMALLOC((totalsz * sizeof(void*)) +
 			     sizeof(yvect_head_t))))
     return (0);
   ny = (yvect_head_t*)nv;
-  nv = (void**)((int)nv + sizeof(yvect_head_t));
+  nv = (void**)((void*)nv + sizeof(yvect_head_t));
   ny->total = totalsz;
   ny->used = y->used;
   memcpy(nv, **v, (y->used + 1) * sizeof(void*));
-  free0(y);
+  YFREE(y);
   *v = nv;
   return (1);
 }
@@ -96,11 +103,11 @@ int yv_setsz(yvect_t *v, unsigned int sz)
 ** yv_len()
 ** Return the length of a yvector (its used size).
 */
-unsigned int yv_len(yvect_t v)
+size_t yv_len(yvect_t v)
 {
   if (!v)
     return (0);
-  return (((yvect_head_t*)((int)v - sizeof(yvect_head_t)))->used);
+  return (((yvect_head_t*)((void*)v - sizeof(yvect_head_t)))->used);
 }
 
 /*
@@ -115,7 +122,7 @@ int yv_cat(yvect_t *dest, yvect_t src)
 
   if (!src || !dest || !*dest || !(srcsz = yv_len(src)))
     return (1);
-  y = (yvect_head_t*)((int)*dest - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)*dest - sizeof(yvect_head_t));
   if ((y->used + 1 + srcsz) <= y->total)
     {
       memcpy(*dest + y->used, src, (srcsz + 1) * sizeof(void*));
@@ -123,19 +130,19 @@ int yv_cat(yvect_t *dest, yvect_t src)
       return (1);
     }
   vectsz = y->used + srcsz;
-  leap = (vectsz < YVECT_SIZE_BIG) ? YVECT_SIZE :
+  leap = (vectsz < YVECT_SIZE_BIG) ? YVECT_SIZE_DEFAULT :
     (vectsz < YVECT_SIZE_HUGE) ? YVECT_SIZE_BIG : YVECT_SIZE_HUGE;
   totalsz = (((vectsz + 1) / leap) + 1) * leap;
-  if (!(nv = (void**)malloc0((totalsz * sizeof(void*)) +
+  if (!(nv = (void**)YMALLOC((totalsz * sizeof(void*)) +
 			     sizeof(yvect_head_t))))
     return (0);
   ny = (yvect_head_t*)nv;
-  nv = (void**)((int)nv + sizeof(yvect_head_t));
+  nv = (void**)((void*)nv + sizeof(yvect_head_t));
   ny->total = totalsz;
   ny->used = vectsz;
   memcpy(nv, *dest, y->used * sizeof(void*));
   memcpy(nv + y->used, src, (srcsz + 1) * sizeof(void*));
-  free0(y);
+  YFREE(y);
   *dest = nv;
   return (1);
 }
@@ -153,7 +160,7 @@ int yv_ncat(yvect_t *dest, yvect_t src, unsigned int n)
 
   if (!src || !dest || !*dest || !n)
     return (1);
-  y = (yvect_head_t*)((int)*dest - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)*dest - sizeof(yvect_head_t));
   if ((y->used + 1 + n) <= y->total)
     {
       memcpy(*dest + y->used, src, n * sizeof(void*));
@@ -162,20 +169,20 @@ int yv_ncat(yvect_t *dest, yvect_t src, unsigned int n)
       return (1);
     }
   vectsz = y->used + n;
-  leap = (vectsz < YVECT_SIZE_BIG) ? YVECT_SIZE :
+  leap = (vectsz < YVECT_SIZE_BIG) ? YVECT_SIZE_DEFAULT :
     (vectsz < YVECT_SIZE_HUGE) ? YVECT_SIZE_BIG : YVECT_SIZE_HUGE;
   totalsz = (((vectsz + 1) / leap) + 1) * leap;
-  if (!(nv = (void**)malloc0((totalsz * sizeof(void*)) +
+  if (!(nv = (void**)YMALLOC((totalsz * sizeof(void*)) +
 			     sizeof(yvect_head_t))))
     return (0);
   ny = (yvect_head_t*)nv;
-  nv = (void**)((int)nv + sizeof(yvect_head_t));
+  nv = (void**)((void*)nv + sizeof(yvect_head_t));
   ny->total = totalsz;
   ny->used = vectsz;
   memcpy(nv, *dest, y->used * sizeof(void*));
   memcpy(nv + y->used, src, n * sizeof(void*));
   nv[ny->used] = NULL;
-  free0(y);
+  YFREE(y);
   *dest = nv;
   return (1);
 }
@@ -191,12 +198,12 @@ yvect_t yv_dup(yvect_t v)
 
   if (!v)
     return (NULL);
-  y = (yvect_head_t*)((int)v - sizeof(yvect_head_t));
-  if (!(nv = (void**)malloc0((y->total * sizeof(void*)) +
+  y = (yvect_head_t*)((void*)v - sizeof(yvect_head_t));
+  if (!(nv = (void**)YMALLOC((y->total * sizeof(void*)) +
 			     sizeof(yvect_head_t))))
     return (NULL);
   ny = (yvect_head_t*)nv;
-  nv = (void**)((int)nv + sizeof(yvect_head_t));
+  nv = (void**)((void*)nv + sizeof(yvect_head_t));
   ny->total = y->total;
   ny->used = y->used;
   memcpy(nv, v, (y->used + 1) * sizeof(void*));
@@ -229,7 +236,7 @@ int yv_put(yvect_t *v, void *e)
 
   if (!v || !*v)
     return (0);
-  y = (yvect_head_t*)((int)*v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)*v - sizeof(yvect_head_t));
   if ((y->used + 2) <= y->total)
     {
       for (i = y->used; i >= 0; --i)
@@ -239,19 +246,19 @@ int yv_put(yvect_t *v, void *e)
       return (1);
     }
   vectsz = y->used + 1;
-  leap = (vectsz < YVECT_SIZE_BIG) ? YVECT_SIZE :
+  leap = (vectsz < YVECT_SIZE_BIG) ? YVECT_SIZE_DEFAULT :
     (vectsz < YVECT_SIZE_HUGE) ? YVECT_SIZE_BIG : YVECT_SIZE_HUGE;
   totalsz = (((vectsz + 1) / leap) + 1) * leap;
-  if (!(nv = (void**)malloc0((totalsz * sizeof(void*)) +
+  if (!(nv = (void**)YMALLOC((totalsz * sizeof(void*)) +
 			     sizeof(yvect_head_t))))
     return (0);
   ny = (yvect_head_t*)nv;
-  nv = (void**)((int)nv + sizeof(yvect_head_t));
+  nv = (void**)((void*)nv + sizeof(yvect_head_t));
   ny->total = totalsz;
   ny->used = vectsz;
   nv[0] = e;
-  memcpy((void*)((int)nv + sizeof(void*)), *v, (y->used + 1) * sizeof(void*));
-  free0(y);
+  memcpy((void*)((void*)nv + sizeof(void*)), *v, (y->used + 1) * sizeof(void*));
+  YFREE(y);
   *v = nv;
   return (1);
 }
@@ -261,14 +268,14 @@ int yv_put(yvect_t *v, void *e)
 ** Insert an element at the given offset of a yvector. All elements
 ** placed at this offset and after are shifted.
 */
-int yv_ins(yvect_t *v, void *e, int i)
+int yv_ins(yvect_t *v, void *e, size_t i)
 {
   yvect_head_t *y;
-  int j;
+  size_t j;
 
   if (!v || !*v)
     return (0);
-  y = (yvect_head_t*)((int)*v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)*v - sizeof(yvect_head_t));
   if (!v || !*v || !yv_setsz(v, y->used + 2))
     return (0);
   if (i > y->used)
@@ -292,7 +299,7 @@ int yv_add(yvect_t *v, void *e)
 
   if (!v || !*v)
     return (0);
-  y = (yvect_head_t*)((int)*v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)*v - sizeof(yvect_head_t));
   if ((y->used + 2) <= y->total)
     {
       (*v)[y->used] = e;
@@ -301,20 +308,20 @@ int yv_add(yvect_t *v, void *e)
       return (1);
     }
   vectsz = y->used + 1;
-  leap = (vectsz < YVECT_SIZE_BIG) ? YVECT_SIZE :
+  leap = (vectsz < YVECT_SIZE_BIG) ? YVECT_SIZE_DEFAULT :
     (vectsz < YVECT_SIZE_HUGE) ? YVECT_SIZE_BIG : YVECT_SIZE_HUGE;
   totalsz = (((vectsz + 1) / leap) + 1) * leap;
-  if (!(nv = (void**)malloc0((totalsz * sizeof(void*)) +
+  if (!(nv = (void**)YMALLOC((totalsz * sizeof(void*)) +
 			     sizeof(yvect_head_t))))
     return (0);
   ny = (yvect_head_t*)nv;
-  nv = (void**)((int)nv + sizeof(yvect_head_t));
+  nv = (void**)((void*)nv + sizeof(yvect_head_t));
   ny->total = totalsz;
   ny->used = vectsz;
   memcpy(nv, *v, y->used * sizeof(void*));
   nv[y->used] = e;
   nv[ny->used] = NULL;
-  free0(y);
+  YFREE(y);
   *v = nv;
   return (1);
 }
@@ -331,7 +338,7 @@ void *yv_pop(yvect_t v)
 
   if (!v)
     return (NULL);
-  y = (yvect_head_t*)((int)v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)v - sizeof(yvect_head_t));
   if (!y->used)
     return (NULL);
   res = *v;
@@ -352,7 +359,7 @@ void *yv_get(yvect_t v)
 
   if (!v)
     return (NULL);
-  y = (yvect_head_t*)((int)v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)v - sizeof(yvect_head_t));
   if (!y->used)
     return (NULL);
   res = v[y->used - 1];
@@ -365,15 +372,15 @@ void *yv_get(yvect_t v)
 ** yv_ext()
 ** Extract the element placed at the given offset of a yvector.
 */
-void *yv_ext(yvect_t v, int i)
+void *yv_ext(yvect_t v, size_t i)
 {
   yvect_head_t *y;
   void *res;
-  int j;
+  size_t j;
 
   if (!v)
     return (NULL);
-  y = (yvect_head_t*)((int)v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)v - sizeof(yvect_head_t));
   if (i >= y->used)
     return (NULL);
   res = v[i];
@@ -390,11 +397,11 @@ void *yv_ext(yvect_t v, int i)
 void yv_uniq(yvect_t v)
 {
   yvect_head_t *y;
-  int i, j, k;
+  size_t i, j, k;
 
   if (!v)
     return ;
-  y = (yvect_head_t*)((int)v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)v - sizeof(yvect_head_t));
   for (i = 0; i < y->used; ++i)
     {
       for (j = i + 1; j < y->used; ++j)
@@ -419,7 +426,7 @@ void yv_sort(yvect_t v, int (*f)(const void*, const void*))
 
   if (!v)
     return ;
-  y = (yvect_head_t*)((int)v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)v - sizeof(yvect_head_t));
   qsort(v, y->used, sizeof(void*), f);
 }
 
@@ -437,7 +444,7 @@ int yv_search(yvect_t v, void *e, int (*f)(const void*, const void*))
 
   if (!v || !f)
     return (-1);
-  y = (yvect_head_t*)((int)v - sizeof(yvect_head_t));
+  y = (yvect_head_t*)((void*)v - sizeof(yvect_head_t));
   o_start = 0;
   o_end = y->used - 1;
   for (; ; )

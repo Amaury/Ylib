@@ -16,14 +16,26 @@ extern "C" {
 
 #include <stdlib.h>
 
-/*! @define YVECT_SIZE Default size for yvectors. */
-#define YVECT_SIZE	4096
+/* ************** TYPE DEFINITIONS ************* */
 
-/*! @define YVECT_SIZE_BIG Size for big yvectors. */
-#define YVECT_SIZE_BIG	65536
-
-/*! @define YVECT_SIZE_HUGE Size for huge yvectors. */
-#define YVECT_SIZE_HUGE	1048576
+/*!
+ * @typdef	yv_size_t
+ *		Enum used to define the size of a yvector.
+ * @constant	YVECT_SIZE_NANO		Size of ultra-light yvectors (4).
+ * @constant	YVECT_SIZE_MINI		Minimal size of yvectors (32).
+ * @constant	YVECT_SIZE_MEDIUM	Medium size of yvectors (256).
+ * @constant	YVECT_SIZE_DEFAULT	Default size of yvectors (4K).
+ * @constant	YVECT_SIZE_BIG		Size of big yvectors (65K).
+ * @constant	YVECT_SIZE_HUGE		Size of huge yvectors (1M).
+ */
+typedef enum yv_size_e {
+	YVECT_SIZE_NANO		= 4,
+	YVECT_SIZE_MINI		= 32,
+	YVECT_SIZE_MEDIUM	= 256,
+	YVECT_SIZE_DEFAULT	= 4096,
+	YVECT_SIZE_BIG		= 65536,
+	YVECT_SIZE_HUGE		= 1048576
+} yv_size_t;
 
 /*!
  * @struct	yvect_head_s
@@ -33,8 +45,8 @@ extern "C" {
  */
 struct yvect_head_s
 {
-  unsigned int total;
-  unsigned int used;
+  size_t total;
+  size_t used;
 };
 
 /*! @typedef yvect_head_t See yvect_head_s structure. */
@@ -43,12 +55,22 @@ typedef struct yvect_head_s yvect_head_t;
 /*! @typedef yvect_t Vector type definition. Always equivalent to (void**). */
 typedef void** yvect_t;
 
+/* *********************** FUNCTIONS ******************* */
+
 /*!
  * @function	yv_new
- *		Create a new yvector.
+ *		Create a new yvector of the default size (4K).
  * @return	The created vector.
  */
 yvect_t yv_new(void);
+
+/*!
+ * @function	yv_create
+ *		Creates a new yvector of the given size.
+ * @param	size	Size of the new yvector.
+ * @return	The created yvector.
+ */
+yvect_t yv_create(yv_size_t size);
 
 /*!
  * @function	yv_del
@@ -82,7 +104,7 @@ void yv_trunc(yvect_t v, void (*f)(void*, void*), void *data);
  * @param	sz	The minimum size for this yvector.
  * @return	0 if an error occurs, 1 otherwise.
  */
-int yv_setsz(yvect_t *v, unsigned int sz);
+int yv_setsz(yvect_t *v, size_t sz);
 
 /*!
  * @function	yv_len
@@ -90,7 +112,7 @@ int yv_setsz(yvect_t *v, unsigned int sz);
  * @param	v	The yvector.
  * @return	The yvector's length.
  */
-unsigned int yv_len(yvect_t v);
+size_t yv_len(yvect_t v);
 
 /*!
  * @function	yv_cat
@@ -158,7 +180,7 @@ int yv_add(yvect_t *v, void *e);
  *			equal to the vector's used size.
  * @return	0 if an error occurs, 1 otherwise.
  */
-int yv_ins(yvect_t *v, void *e, int i);
+int yv_ins(yvect_t *v, void *e, size_t i);
 
 /*!
  * @function	yv_pop
@@ -185,7 +207,7 @@ void *yv_get(yvect_t v);
  *			the vector's used size.
  * @return	A pointer to the removed element.
  */
-void *yv_ext(yvect_t v, int i);
+void *yv_ext(yvect_t v, size_t i);
 
 /*!
  * @function	yv_uniq
@@ -207,7 +229,7 @@ void yv_sort(yvect_t v, int (*f)(const void*, const void*));
  * @function	yv_search
  *		Search the offset of an element in a yvector. WARNING: the
  *		yvector must be sorted (using yv_sort()) because this
- *		function use dichotomy.
+ *		function uses dichotomy.
  * @param	v	The yvector.
  * @param	e	The element to compare.
  * @param	f	A pointer to the function used to compare elements.

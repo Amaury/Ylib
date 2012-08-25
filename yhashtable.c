@@ -4,7 +4,6 @@
 #include "yhashtable.h"
 
 /* *** definition of private functions *** */
-static yht_hash_value_t _yht_hash(const char *key);
 static ybool_t _yht_remove(yhashtable_t *hashtable, yht_hash_value_t hash_value, const char *key);
 static void *_yht_search(yhashtable_t *hashtable, yht_hash_value_t hash_value, const char *key);
 static void _yht_add(yhashtable_t *hashtable, yht_hash_value_t hash_value, char *key, void *data);
@@ -88,6 +87,14 @@ void *yht_search_from_int(yhashtable_t *hashtable, size_t key) {
 }
 
 /*
+ * yht_search_from_hashed_string
+ * Search an element in a hash table, from its hashed string key.
+ */
+void *yht_search_from_hashed_string(yhashtable_t *hashtable, size_t hash_value, const char *key) {
+	return (_yht_search(hashtable, hash_value, key));
+}
+
+/*
  * yht_remove_from_string
  * Remove an element from a hash table, using its string key.
  */
@@ -157,12 +164,11 @@ void yht_foreach(yhashtable_t *hashtable, yht_function_t func, void *user_data) 
 	}
 }
 
-/* ****** PRIVATE FUNCTIONS ******* */
 /*
- * _yht_hash()
+ * yht_hash()
  * Compute the hash value of a key, using the SDBM algorithm.
  */
-static yht_hash_value_t _yht_hash(const char *key) {
+yht_hash_value_t yht_hash(const char *key) {
 	yht_hash_value_t	hash_value;
 
 	for (hash_value = 0; *key; key++)
@@ -170,6 +176,7 @@ static yht_hash_value_t _yht_hash(const char *key) {
 	return (hash_value);
 }
 
+/* ****** PRIVATE FUNCTIONS ******* */
 /**
  * _yht_remove
  * Remove an element from a hash table, using a string or an integer key.
@@ -185,7 +192,7 @@ static ybool_t _yht_remove(yhashtable_t *hashtable, yht_hash_value_t hash_value,
 
 	/* compute the key's hash value */
 	if (key != NULL)
-		hash_value = _yht_hash(key);
+		hash_value = yht_hash(key);
 	modulo_value = hash_value % hashtable->size;
 	/* retreiving the bucket */
 	bucket = &(hashtable->buckets[modulo_value]);
@@ -240,9 +247,9 @@ static void *_yht_search(yhashtable_t *hashtable, yht_hash_value_t hash_value, c
 	yht_element_t		*element;
 	size_t			offset;
 
-	/* compute the key's hash value */
-	if (key != NULL)
-		hash_value = _yht_hash(key);
+	/* compute the key's hash value if necessary */
+	if (hash_value == 0 && key != NULL)
+		hash_value = yht_hash(key);
 	modulo_value = hash_value % hashtable->size;
 	/* retreiving the bucket */
 	bucket = &(hashtable->buckets[modulo_value]);
@@ -278,7 +285,7 @@ static void _yht_add(yhashtable_t *hashtable, yht_hash_value_t hash_value, char 
 		yht_resize(hashtable, (hashtable->size * 2));
 	/* compute the key's hash value */
 	if (key != NULL)
-		hash_value = _yht_hash(key);
+		hash_value = yht_hash(key);
 	modulo_value = hash_value % hashtable->size;
 	/* checking the bucket */
 	bucket = &(hashtable->buckets[modulo_value]);

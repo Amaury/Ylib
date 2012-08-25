@@ -7,7 +7,9 @@ NAME	=	liby.a
 
 SRC_HASH =	yhashmap.c	\
 		yhashtable.c	\
-		ystr.c
+		ystr.c		\
+		yvect.c		\
+		yhashstack.c
 
 # Name of source files (names.c)
 SRC       =	ymalloc.c	\
@@ -64,19 +66,24 @@ OBJS    =	$(SRC:.c=.o)
 OBJS_HASH =	$(SRC_HASH:.c=.o)
 
 # Objects compilation options
-CFLAGS  =	-ansi -std=c90 -pedantic-errors -Wall -Wextra -Wmissing-prototypes \
-		  -Wno-long-long $(IPATH) -D_GNU_SOURCE \
+CFLAGS  =	-ansi -std=c90 -pedantic -Wall -Wextra -Wmissing-prototypes \
+		  -Wno-long-long -Wno-pointer-arith $(IPATH) -D_GNU_SOURCE \
 		  -D_LARGEFILE_SOURCE -D_THREAD_SAFE -fPIC
 CFLAGS_CYGWIN =	-Wall -Wmissing-prototypes -Wno-long-long $(IPATH) \
 		  -D_GNU_SOURCE -D_LARGEFILE_SOURCE -D_THREAD_SAFE
 
 # #####################################################################
 
-.PHONY: lib cygwin clean all cygall doc docclean
+.PHONY: lib cygwin clean all cygall doc docclean hash cleanhash allhash
 
 hash: $(OBJS_HASH) $(SRC_HASH)
 	ar -r $(NAME) $(OBJS_HASH)
 	ranlib $(NAME)
+
+cleanhash:
+	$(RM) $(OBJS_HASH) $(NAME) *~
+
+allhash: cleanhash hash
 
 $(NAME): $(OBJS) $(SRC)
 	ar -r $(NAME) $(OBJS)
