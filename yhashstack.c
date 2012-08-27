@@ -25,6 +25,19 @@ yhashstack_t yhs_duplicate(yhashstack_t hashstack) {
 }
 
 /*
+ * yhs_concat
+ * Add the content of a hash stack at the end of another hash stack.
+ * If a hash table of the source hash stack already exists in the
+ * destination hash stack, it is not added.
+ */
+void yhs_concat(yhashstack_t *destination, yhashstack_t source) {
+	size_t	len;
+
+	for (len = yv_len((yvect_t)source); len > 0; --len)
+		yhs_push_hash(destination, (yhashtable_t*)source[len - 1]);
+}
+
+/*
  * yhs_get_last_hash
  * Returns a pointer to the last hash table of a hash stack.
  */
@@ -33,7 +46,9 @@ yhashtable_t *yhs_get_last_hash(yhashstack_t hashstack) {
 	yhashtable_t	*hashtable;
 
 	len = yv_len((yvect_t)hashstack);
-	hashtable = (yhashtable_t*)hashstack[len];
+	if (len == 0)
+		return (NULL);
+	hashtable = (yhashtable_t*)hashstack[len - 1];
 	return (hashtable);
 }
 
@@ -43,6 +58,12 @@ yhashtable_t *yhs_get_last_hash(yhashstack_t hashstack) {
  * exists in the stack.
  */
 void yhs_push_hash(yhashstack_t *hashstack, yhashtable_t *hashtable) {
+	size_t	len;
+
+	for (len = yv_len((yvect_t)*hashstack); len > 0; --len) {
+		if ((yhashtable_t*)hashstack[len - 1] == hashtable)
+			return;
+	}
 	yv_add((yvect_t*)hashstack, hashtable);
 }
 
@@ -52,6 +73,40 @@ void yhs_push_hash(yhashstack_t *hashstack, yhashtable_t *hashtable) {
  */
 yhashtable_t *yhs_pop_hash(yhashstack_t hashstack) {
 	return (yv_get((yvect_t)hashstack));
+}
+
+/*
+ * yhs_add_from_string
+ * Add an element in the last hash table of a hash stack, from its string key.
+ * If the hash stack doesn't contain any hash table, an empty hash table is added
+ * to it first.
+ */
+void yhs_add_from_string(yhashstack_t hashstack, char *key, void *data) {
+	yhashtable_t	*hashtable;
+
+	hashtable = yhs_get_last_hash(hashstack);
+	if (hashtable == NULL) {
+		hashtable = yht_new(YHT_SIZE_NANO, NULL, NULL);
+		yhs_push_hash(&hashstack, hashtable);
+	}
+	yht_add_from_string(hashtable, key, data);
+}
+
+/*
+ * yhs_add_from_int
+ * Add an element in the last hash table of a hash stack, from its integer key.
+ * If the hash stack doesn't contain any hash table, an empty hash table is added
+ * to it first.
+ */
+void yhs_add_from_int(yhashstack_t hashstack, size_t key, void *data) {
+	yhashtable_t	*hashtable;
+
+	hashtable = yhs_get_last_hash(hashstack);
+	if (hashtable == NULL) {
+		hashtable = yht_new(YHT_SIZE_NANO, NULL, NULL);
+		yhs_push_hash(&hashstack, hashtable);
+	}
+	yht_add_from_int(hashtable, key, data);
 }
 
 /*
