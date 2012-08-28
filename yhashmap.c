@@ -113,9 +113,22 @@ void yhm_add(yhashmap_t *hashmap, char *key, void *data) {
 
 /*
  * yhm_search()
- * Search an element in an hash map, from its key.
+ * Search an element in an hash map, and returns its value.
  */
 void *yhm_search(yhashmap_t *hashmap, const char *key) {
+	yhm_element_t	*element;
+
+	element = yhm_search_element(hashmap, key);
+	if (element != NULL)
+		return (element->data);
+	return (NULL);
+}
+
+/*
+ * yhm_search_element()
+ * Search an element in a hash map, and return a pointer to the element item.
+ */
+yhm_element_t *yhm_search_element(yhashmap_t *hashmap, const char *key) {
 	yhm_hash_value_t	hash_value;
 	yhm_bucket_t		*bucket;
 	yhm_element_t		*element;
@@ -129,12 +142,12 @@ void *yhm_search(yhashmap_t *hashmap, const char *key) {
 	if (bucket->nbr_elements == 0)
 		return (NULL);
 	if (bucket->nbr_elements == 1)
-		return (bucket->elements->data);
+		return (bucket->elements);
 	for (offset = 0, element = bucket->elements;
 	     offset < bucket->nbr_elements;
 	     offset++, element = element->next) {
 		if (!strcmp(key, element->key))
-			return (element->data);
+			return (element);
 	}
 	return (NULL);
 }

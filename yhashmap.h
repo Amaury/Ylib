@@ -131,12 +131,26 @@ void yhm_add(yhashmap_t *hashmap, char *key, void *data);
 
 /**
  * @function	yhm_search
- *		Search an element in a hash map, from its key.
+ *		Search an element in a hash map, and returns its value. Returns
+ *		NULL if the elements doesn't exist (and if it exists and contains
+ *		NULL as its value).
  * @param	hashmap	Pointer to the hash map.
  * @param	key	Key used to index the element.
  * @return	A pointer to the element's data.
  */
 void *yhm_search(yhashmap_t *hashmap, const char *key);
+
+/**
+ * @function	yhm_search_element
+ *		Search an element in a hash map, and returns a pointer to the
+ *		element item. Returns NULL if the element doesn't exist. This
+ *		function is useful to find an element wich contains the NULL value,
+ *		or to chek if an element exists.
+ * @param	hashmap	Pointer to the hash map.
+ * @param	key	Key used to index the element.
+ * @return	A pointer to the element's structure.
+ */
+yhm_element_t *yhm_search_element(yhashmap_t *hahsmap, const char *key);
 
 /*
  * @function	yhm_remove
