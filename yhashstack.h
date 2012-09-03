@@ -55,14 +55,24 @@ yhashstack_t yhs_duplicate(yhashstack_t hashstack);
 void yhs_delete(yhashstack_t *hashstack);
 
 /**
- * @function	yhs_concat
+ * @function	yhs_cat
  *		Add the content of a hash stack at the end of another hash stack.
  *		If a hash table of the source hash stack already exists in the
  *		destination hash stack, it is not added.
  * @param	destination	Pointer to the destination hash stack.
  * @param	source		The source hash stack.
  */
-void yhs_concat(yhashstack_t *destination, yhashstack_t source);
+void yhs_cat(yhashstack_t *destination, yhashstack_t source);
+
+/**
+ * @function	yhs_tac
+ *		Add the contenxt of a hash stack at the beginning of another hash
+ *		stack. If a hash table of the source hash stack already exists in
+ *		the destination hash stack, it is not added.
+ * @param	destination	Pointer to the destination hash stack.
+ * @param	source		The source hash stack.
+ */
+void yhs_tac(yhashstack_t *destination, yhashstack_t source);
 
 /* ---------- hash tables manipulation ---------- */
 
@@ -81,7 +91,16 @@ yhashtable_t *yhs_get_last_hash(yhashstack_t hashstack);
  * @param	hashstack	Pointer to the hash stack.
  * @param	hashtable	Pointer to the hashtable.
  */
-void yhs_push_hash(yhashstack_t *hashstack, yhashtable_t *hashtable); 
+void yhs_push_hash(yhashstack_t *hashstack, yhashtable_t *hashtable);
+
+/**
+ * @function	yhs_add_hash
+ *		Add a hash table at the beginning of a hash stack, only if it
+ *		doesn't already exists in the stack.
+ * @param	hashstack	Pointer to the hash stack.
+ * @param	hashtable	Pointer to the hashtable.
+ */
+void yhs_add_hash(yhashstack_t *hashstack, yhashtable_t *hashtable);
 
 /**
  * @function	yhs_pop_hash

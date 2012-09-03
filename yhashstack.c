@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "yhashstack.h"
 
 /*
@@ -25,16 +26,31 @@ yhashstack_t yhs_duplicate(yhashstack_t hashstack) {
 }
 
 /*
- * yhs_concat
+ * yhs_cat
  * Add the content of a hash stack at the end of another hash stack.
  * If a hash table of the source hash stack already exists in the
  * destination hash stack, it is not added.
  */
-void yhs_concat(yhashstack_t *destination, yhashstack_t source) {
+void yhs_cat(yhashstack_t *destination, yhashstack_t source) {
 	size_t	len;
 
-	for (len = yv_len((yvect_t)source); len > 0; --len)
+	for (len = yv_len((yvect_t)source); len > 0; --len) {
 		yhs_push_hash(destination, (yhashtable_t*)source[len - 1]);
+	}
+}
+
+/*
+ * yhs_tac
+ * Add the content of a hash stack at the beginning of another hash stack.
+ * If a hash table of the source hash stack already exists in the
+ * destination hash stack, it is not added.
+ */
+void yhs_tac(yhashstack_t *destination, yhashstack_t source) {
+	size_t	len;
+
+	for (len = yv_len((yvect_t)source); len > 0; --len) {
+		yhs_add_hash(destination, (yhashtable_t*)source[len - 1]);
+	}
 }
 
 /*
@@ -65,6 +81,21 @@ void yhs_push_hash(yhashstack_t *hashstack, yhashtable_t *hashtable) {
 			return;
 	}
 	yv_add((yvect_t*)hashstack, hashtable);
+}
+
+/*
+ * yhs_add_hash
+ * Add a hash table at the beginning of a hash stack, only if it doesn't already
+ * exists in the stack.
+ */
+void yhs_add_hash(yhashstack_t *hashstack, yhashtable_t *hashtable) {
+	size_t	len;
+
+	for (len = yv_len((yvect_t)*hashstack); len > 0; --len) {
+		if ((yhashtable_t*)hashstack[len - 1] == hashtable)
+			return;
+	}
+	yv_put((yvect_t*)hashstack, hashtable);
 }
 
 /*
