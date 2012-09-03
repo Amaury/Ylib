@@ -4,7 +4,7 @@
 #include "yhashtable.h"
 
 /* *** definition of private functions *** */
-static ybool_t _yht_remove(yhashtable_t *hashtable, yht_hash_value_t hash_value, const char *key);
+static ybool_t _yht_remove(yhashtable_t *hashtable, yht_hash_value_t hash_value, const char *key, ybool_t try_to_destroy);
 static void *_yht_search(yhashtable_t *hashtable, yht_hash_value_t hash_value, const char *key);
 static void _yht_add(yhashtable_t *hashtable, yht_hash_value_t hash_value, char *key, void *data);
 
@@ -20,6 +20,7 @@ yhashtable_t *yht_new(yht_size_t size, yht_function_t destroy_func, void *destro
 	hash->size = size;
 	hash->used = 0;
 	hash->items = NULL;
+	hash->next_offset = 0;
 	hash->destroy_func = destroy_func;
 	hash->destroy_data = destroy_data;
 	return (hash);
@@ -67,7 +68,17 @@ void yht_add_from_string(yhashtable_t *hashtable, char *key, void *data) {
  * Add an element to a hash table, using an integer key.
  */
 void yht_add_from_int(yhashtable_t *hashtable, size_t key, void *data) {
+	if (key >= hashtable->next_offset)
+		hashtable->next_offset = key + 1;
 	_yht_add(hashtable, key, NULL, data);
+}
+
+/*
+ * yht_push_data
+ * Add an element at the end of a hash table.
+ */
+void yht_push_data(yhashtable_t *hashtable, void *data) {
+	yht_add_from_int(hashtable, hashtable->next_offset, data);
 }
 
 /*
@@ -95,11 +106,27 @@ void *yht_search_from_hashed_string(yhashtable_t *hashtable, size_t hash_value, 
 }
 
 /*
+ * yht_pop_data
+ * Remove the last element of a hash table and returns it.
+ */
+void *yht_pop_data(yhashtable_t *hashtable) {
+	yht_element_t	*element;
+	void		*data;
+
+	if (hashtable->items == NULL)
+		return (NULL);
+	element = hashtable->items->previous->element;
+	data = element->data;
+	_yht_remove(hashtable, element->hash_value, element->key, YFALSE);
+	return (data);
+}
+
+/*
  * yht_remove_from_string
  * Remove an element from a hash table, using its string key.
  */
 ybool_t yht_remove_from_string(yhashtable_t *hashtable, const char *key) {
-	return (_yht_remove(hashtable, 0, key));
+	return (_yht_remove(hashtable, 0, key, YTRUE));
 }
 
 /*
@@ -107,7 +134,7 @@ ybool_t yht_remove_from_string(yhashtable_t *hashtable, const char *key) {
  * Remove an element from a hash table, using its integer key.
  */
 ybool_t yht_remove_from_int(yhashtable_t *hashtable, size_t key) {
-	return (_yht_remove(hashtable, key, NULL));
+	return (_yht_remove(hashtable, key, NULL, YTRUE));
 }
 
 /*
@@ -181,7 +208,7 @@ yht_hash_value_t yht_hash(const char *key) {
  * _yht_remove
  * Remove an element from a hash table, using a string or an integer key.
  */
-static ybool_t _yht_remove(yhashtable_t *hashtable, yht_hash_value_t hash_value, const char *key) {
+static ybool_t _yht_remove(yhashtable_t *hashtable, yht_hash_value_t hash_value, const char *key, ybool_t try_to_destroy) {
 	yht_hash_value_t	modulo_value;
 	yht_bucket_t		*bucket;
 	yht_element_t		*element;
@@ -206,7 +233,7 @@ static ybool_t _yht_remove(yhashtable_t *hashtable, yht_hash_value_t hash_value,
 		    ((key == NULL && element->key == NULL) ||
 		     (key != NULL && element->key != NULL && !strcmp(key, element->key)))) {
 			found = YTRUE;
-			if (hashtable->destroy_func != NULL)
+			if (try_to_destroy && hashtable->destroy_func != NULL)
 				hashtable->destroy_func(element->hash_value, element->key, element->data, hashtable->destroy_data);
 			item = element->item;
 			if (hashtable->used == 1)

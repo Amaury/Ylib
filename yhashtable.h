@@ -109,6 +109,7 @@ typedef void (*yht_function_t)(yht_hash_value_t hash_value, char *key, void *dat
  * @field	used		Current number of elements stored in the hash table.
  * @field	buckets		Array of buckets.
  * @field	items		List of pointers to the stored elements.
+ * @field	next_offset	Next free hash value.
  * @field	destroy_func	Pointer to the function called when an element is removed.
  * @field	destroy_data	Pointer to some user data given to the destroy function.
  */
@@ -117,6 +118,7 @@ typedef struct yhashtable_s {
 	size_t		used;
 	yht_bucket_t	*buckets;
 	yht_list_t	*items;
+	size_t		next_offset;
 	yht_function_t	destroy_func;
 	void		*destroy_data;
 } yhashtable_t;
@@ -158,6 +160,14 @@ void yht_add_from_string(yhashtable_t *hashtable, char *key, void *data);
 void yht_add_from_int(yhashtable_t *hashtable, size_t key, void *data);
 
 /**
+ * @function	yht_push_data
+ *		Add an element at the end of a hash table.
+ * @param	hashtable	Pointer to the hash table.
+ * @param	data		The element's data.
+ */
+void yht_push_data(yhashtable_t *hashtable, void *data);
+
+/**
  * @function	yht_search_from_string
  *		Search an element in a hash table, from its string key.
  * @param	hashtable	Pointer to the hash table.
@@ -184,6 +194,14 @@ void *yht_search_from_int(yhashtable_t *hashtable, size_t key);
  * @return	A pointer to the element's data.
  */
 void *yht_search_from_hashed_string(yhashtable_t *hashtable, size_t hash_value, const char *key);
+
+/**
+ * @function	yht_pop_data
+ *		Remove the last element of a hash table and returns it.
+ * @param	hashtable	Pointer to the hash table.
+ * @return	A pointer to the element's data.
+ */
+void *yht_pop_data(yhashtable_t *hashtable);
 
 /**
  * @function	yht_remove_from_string
