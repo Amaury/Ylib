@@ -1,6 +1,39 @@
 #include "y.h"
 
-#if 0
+#if 1
+
+ystatus_t callback(uint64_t hash, char *key, void *data, void *user_data) {
+	//printf("in callback [%lu] (key: %lx) (data: %lx)\n", hash, (long unsigned int)key, (long unsigned int)data);
+	printf("[%lu/%s] : '%s'\n", hash, key, (char*)data);
+	return (YENOERR);
+}
+int main() {
+	ytable_t *yt = ytable_new();
+	ytable_add(yt, "aaa");
+	ytable_add(yt, "bbb");
+	ytable_add(yt, "ccc");
+	ytable_push(yt, "zzz");
+	ytable_push(yt, "yyy");
+	printf("length: %u\n", ytable_length(yt));
+	ystatus_t st = ytable_foreach(yt, callback, NULL);
+	if (st == YENOERR) {
+		printf("OK\n");
+	} else {
+		printf("KO\n");
+	}
+
+	ytable_insert_index(yt, 123, "xxx");
+	ytable_add(yt, "www");
+	ytable_add(yt, "vvv");
+	printf("length: %u\n", ytable_length(yt));
+	st = ytable_foreach(yt, callback, NULL);
+	if (st == YENOERR) {
+		printf("OK\n");
+	} else {
+		printf("KO\n");
+	}
+}
+#elif 0
 typedef struct s_s {
 	int i;
 	char c;
@@ -24,8 +57,7 @@ int main(int argc, char **argv) {
 	}
 	yarray_foreach(a, func, &a);
 }
-#endif
-#if 0
+#elif 0
 void func(size_t index, void *data, void *user_data) {
 	yvector_t *v = user_data;
 	printf("%ld/%ld: '%s'\n", index, v->count, (char*)data);
@@ -43,8 +75,7 @@ int main(int argc, char **argv) {
 	}
 	yvector_foreach(&v, func, &v);
 }
-#endif
-#if 1
+#elif 1
 int main(int argc, char **argv) {
 	yjson_parser_t *json;
 	yvar_t val;
@@ -77,8 +108,7 @@ int main(int argc, char **argv) {
 
 	yjson_free(json);
 }
-#endif
-#if 0
+#elif 0
 void show_attribute(size_t index, void *elem, void *data);
 
 void main(int argc, char **argv) {

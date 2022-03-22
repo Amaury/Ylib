@@ -53,12 +53,12 @@ typedef enum yhashtable_size_e {
  * @field	next		Pointer to the next element with the same hash value.
  */
 typedef struct yhashtable_element_s {
-	size_t				hash_value;
-	char				*key;
-	void				*data;
-	struct yhashtable_element_s	*previous;
-	struct yhashtable_element_s	*next;
-	struct yhashtable_list_s	*item;
+	size_t hash_value;
+	char *key;
+	void *data;
+	struct yhashtable_element_s *previous;
+	struct yhashtable_element_s *next;
+	struct yhashtable_list_s *item;
 } yhashtable_element_t;
 
 /**
@@ -68,8 +68,8 @@ typedef struct yhashtable_element_s {
  * @field	elements	Pointer to the first element.
  */
 typedef struct yhashtable_bucket_s {
-	size_t			nbr_elements;
-	yhashtable_element_t	*elements;
+	size_t nbr_elements;
+	yhashtable_element_t *elements;
 } yhashtable_bucket_t;
 
 /**
@@ -80,9 +80,9 @@ typedef struct yhashtable_bucket_s {
  * @field	next		Pointer to the next list item.
  */
 typedef struct yhashtable_list_s {
-	yhashtable_element_t		*element;
-	struct yhashtable_list_s	*previous;
-	struct yhashtable_list_s	*next;
+	yhashtable_element_t *element;
+	struct yhashtable_list_s *previous;
+	struct yhashtable_list_s *next;
 } yhashtable_list_t;
 
 /**
@@ -106,13 +106,13 @@ typedef void (*yhashtable_function_t)(size_t hash_value, char *key, void *data, 
  * @field	destroy_data	Pointer to some user data given to the destroy function.
  */
 typedef struct yhashtable_s {
-	size_t			size;
-	size_t			used;
-	yhashtable_bucket_t	*buckets;
-	yhashtable_list_t	*items;
-	size_t			next_offset;
-	yhashtable_function_t	destroy_func;
-	void			*destroy_data;
+	size_t size;
+	size_t used;
+	yhashtable_bucket_t *buckets;
+	yhashtable_list_t *items;
+	size_t next_offset;
+	yhashtable_function_t destroy_func;
+	void *destroy_data;
 } yhashtable_t;
 
 /* ****************** FUNCTIONS **************** */

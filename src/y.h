@@ -22,6 +22,7 @@ extern "C" {
 #include <stddef.h>
 #include <ctype.h>
 #include <math.h>
+#include <sys/param.h>	// MIN() and MAX() macros
 #include "ystatus.h"
 #include "ymemory.h"
 #include "ybin.h"
@@ -41,6 +42,7 @@ extern "C" {
 #include "ylog.h"
 #include "yqprintable.h"
 #include "ysax.h"
+#include "ytable.h"
 #include "ytimer.h"
 #include "yurl.h"
 #include "yvalue.h"
@@ -209,6 +211,8 @@ extern "C" {
  * Compute a size by rounding a given number to the next power of 2, with a minimal value.
  */
 #define COMPUTE_SIZE(s, minimal)	(((s) < minimal) ? minimal : NEXT_POW2((s)))
+/** @define MODULO_POW2	Do a modulo over a power of two value. */
+#define MODULO_POW2(n, p)	((n) & ((p) - 1))	// equivalent to ((n) % (p))
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

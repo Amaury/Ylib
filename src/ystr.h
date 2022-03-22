@@ -279,10 +279,10 @@ ystatus_t ys_gets(ystr_t *s, FILE *stream);
 /**
  * @function	ys_is_numeric
  *		Tell if a string only contains digits (0-9).
- * @param	s	A pointer to the ystring.
+ * @param	s	A pointer to the string.
  * @return	true if the string contains digits only.
  */
-bool ys_is_numeric(ystr_t s);
+bool ys_is_numeric(const char *s);
 /**
  * @function	str2xmlentity
  *		Convert a character string in another one where each XML special
@@ -299,6 +299,23 @@ char *str2xmlentity(char *str);
  * @return	The unconverted string, or NULL.
  */
 char *xmlentity2str(char *str);
+/**
+ * @function	strcmp0
+ *		Call the standard strcmp() function, checking first if parameters are not NULL.
+ * @param	s1	Pointer to the first string.
+ * @param	s2	Pointer to the second string.
+ * @return	0 if strings are equal, <0 if s1 is less than s2, >0 if s1 is greater than s2.
+ */
+int strcmp0(const char *s1, const char *s2);
+/**
+ * @function	strncmp0
+ *		Call the standard strncmp() function, checking first if parameters are not NULL.
+ * @param	s1	Pointer to the first string.
+ * @param	s2	Pointer to the second string.
+ * @param	n	Maximum size of checked string.
+ * @return	0 if strings are equal, <0 if s1 is less than s2, >0 if s1 is greater than s2.
+ */
+int strncmp0(const char *s1, const char *s2, size_t n);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

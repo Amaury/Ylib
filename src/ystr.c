@@ -606,10 +606,10 @@ ystatus_t ys_gets(ystr_t *s, FILE *stream) {
 	return (YENOERR);
 }
 /* Tell if a string only contains digits. */
-bool ys_is_numeric(ystr_t s) {
+bool ys_is_numeric(const char *s) {
 	if (!s)
 		return (false);
-	for (char *pt = s; *pt; ++pt) {
+	for (const char *pt = s; *pt; ++pt) {
 		if (!isdigit(*pt))
 			return (false);
 	}
@@ -680,5 +680,24 @@ char *xmlentity2str(char *str) {
 	ys_free(res);
 	return (result);
 }
-
+/* Call the standard strcmp() function, checking first if parameters are not NULL. */
+int strcmp0(const char *s1, const char *s2) {
+	if (!s1 && !s2)
+		return (0);
+	if (!s1)
+		return (-s2[0]);
+	if (!s2)
+		return (s1[0]);
+	return (strcmp(s1, s2));
+}
+/* Call the standard strncmp() function, checking first if parameters are not NULL. */
+int strncmp0(const char *s1, const char *s2, size_t n) {
+	if (!s1 && !s2)
+		return (0);
+	if (!s1)
+		return (-s2[0]);
+	if (!s2)
+		return (s1[0]);
+	return (strncmp(s1, s2, n));
+}
 

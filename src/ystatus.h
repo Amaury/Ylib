@@ -21,6 +21,13 @@ extern "C" {
 /** @typedef ystatus_t Type for error handling. Non-zero values are errors. */
 typedef signed int ystatus_t;
 
+/** @define RETURN_IF_ERR	If the return status of a function is not YENOERR, return it. */
+#define RETURN_IF_ERR(s)	{ystatus_t _st = (s); if (_st != YENOERR) return (_st);}
+/** @define RETURN_VOID_IF_ERR	If the return status of a function is not YENOERR, return. */
+#define RETURN_VOID_IF_ERR(s)	{ystatus_t _st = (s); if (_st != YENOERR) return;}
+/** @define RETURN_NULL_IF_ERR	If the return status of a function is not YENOERR, return NULL. */
+#define RETURN_NULL_IF_ERR(s)	{ystatus_t _st = (s); if (_st != YENOERR) return (NULL);}
+
 /** @define YENOERR No error. */
 #define YENOERR			0
 /** @define YEUNDEF Error not defined. */

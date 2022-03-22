@@ -28,6 +28,7 @@ SRC =		yarray.c	\
 		yqprintable.c	\
 		ysax.c		\
 		ystr.c		\
+		ytable.c	\
 		ytimer.c	\
 		yurl.c		\
 		yvalue.c	\
@@ -58,6 +59,7 @@ INCLUDES =	yarray.h	\
 		ysax.h		\
 		ystatus.h	\
 		ystr.h		\
+		ytable.h	\
 		ytimer.h	\
 		yurl.h		\
 		yvalue.h	\
@@ -86,7 +88,7 @@ LDFLAGS	= -shared -Wl,-soname,$(SONAME)
 
 # #####################################################################
 
-.PHONY: lib copy clean all doc docclean
+.PHONY: lib copy clean all test cleantest alltest doc docclean
 
 lib: $(SONAME) $(NAME) copy
 

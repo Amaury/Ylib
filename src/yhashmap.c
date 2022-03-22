@@ -6,7 +6,7 @@
 
 /* ************ PRIVATE DEFINITIONS AND MACROS ************ */
 /** @define YHM_MINIMAL_SIZE Minimal size of an hashmap. */
-#define _YHASHMAP_DEFAULT_SIZE	256
+#define _YHASHMAP_DEFAULT_SIZE	8
 /** @define _ARRAY_SIZE Compute the size of a new yhashmap's buffer. */
 #define _YHASHMAP_SIZE(s)	COMPUTE_SIZE((s), _YHASHMAP_DEFAULT_SIZE)
 /** @define YHM_MAX_LOAD_FACTOR	Maximum load factor before increasing a hash map. */
