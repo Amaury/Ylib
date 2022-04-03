@@ -10,7 +10,7 @@
 extern "C" {
 #endif /* __cplusplus || c_plusplus */
 
-#include "y.h"
+#include <stdbool.h>
 
 /* ********** MACROS DEFINTIONS ********** */
 
@@ -19,15 +19,16 @@ extern "C" {
 /** @define YRES_VAL	Return the value of a yres_t-derived type. */
 #define YRES_VAL(y)	((y).value)
 /** @define YRES_ASSERT	Check if a result has error. If yes, the program is stopped. */
-#define YASSERT(y, ...)	((YRES_STATUS(y) == YENOERR) ? \
-			 (y.value) : \
-			 (YLOG_ADD(YLOG_ERR, __VA_ARGS__), exit(YRES_STATUS(y)), 0))
+#define YASSERT(y, ...)	do {if (YRES_STATUS(y) != YENOERR) { \
+			      YLOG_ADD(YLOG_ERR, __VA_ARGS__); \
+			      exit(YRES_STATUS(y)); \
+			}} while (0)
 /** @define YRETURN	Define a result with an error code and a value. */
-#define YRESULT(_type, _status, _value)	((_type){.status = _status, .value = _value})
+#define YRESULT(_type, _status, _value)	((_type){.status = (_status), .value = (_value)})
 /** @define YRETURN_ERR	Define a result with an error code (no value). */
-#define YRESULT_ERR(_type, _status)	((_type){.status = _status})
+#define YRESULT_ERR(_type, _status)	((_type){.status = (_status)})
 /** @define YRETURN_VAL	Define a result with a value (no error). */
-#define YRESULT_VAL(_type, _value)	((_type){.status = YENOERR, .value = _value})
+#define YRESULT_VAL(_type, _value)	((_type){.status = YENOERR, .value = (_value)})
 
 /* ********** TYPE DEFINITIONS ********** */
 
@@ -39,43 +40,46 @@ typedef union {
 /** @typedef yres_bool_t	Boolean result. */
 typedef struct {
 	ystatus_t status;
-	bool      value;
+	bool value;
 } yres_bool_t;
 /** @typedef yres_int_t	Integer result. */
 typedef struct {
 	ystatus_t status;
-	int64_t   value;
+	int64_t value;
 } yres_int_t;
 /** @typedef yres_float_t Floating-point number result. */
 typedef struct {
 	ystatus_t status;
-	double    value;
+	double value;
 } yres_float_t;
 /** @typedef yres_pointer_t	Generic pointer result. */
 typedef struct {
 	ystatus_t status;
-	void      *value;
+	void *value;
 } yres_pointer_t;
 /** @typedef yres_str_t	String result. */
 typedef struct {
 	ystatus_t status;
-	ystr_t    value;
+	char *value;
 } yres_str_t;
-/** @typedef yres_array_t	Array result. */
+
+#include "ytable.h"
+
+/** @typedef yres_table_t	Table result. */
 typedef struct {
 	ystatus_t status;
-	yarray_t  value;
+	ytable_t  *value;
 } yres_array_t;
-/** @typedef yres_hashmap_t	Hashmap result. */
-typedef struct {
-	ystatus_t         status;
-	struct yhashmap_s *value;
-} yres_hashmap_t;
+
+#include "yvar.h"
+
 /** @typedef yres_var_t	yvar result. */
+/*
 typedef struct {
-	ystatus_t     status;
-	struct yvar_s *value;
+	ystatus_t status;
+	yvar_t value;
 } yres_var_t;
+*/
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

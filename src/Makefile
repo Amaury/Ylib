@@ -113,7 +113,7 @@ clean:
 all: clean lib
 
 test: main.c
-	$(CC) main.c -L. -ly -lm -Wl,-rpath -Wl,'$$ORIGIN/../lib' -o test
+	$(CC) $(CFLAGS) main.c -L. -ly -lm -Wl,-rpath -Wl,'$$ORIGIN/../lib' -o test
 
 cleantest:
 	rm -f test

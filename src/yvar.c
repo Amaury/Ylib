@@ -1,7 +1,7 @@
 #include "yvar.h"
 
 /* ********** PRIVATE FUNCTIONS ********** */
-static ystatus_t _yvar_delete_array_item(size_t index, void *data, void *user_data);
+static ystatus_t _yvar_delete_table_item(uint64_t index, char *key, void *data, void *user_data);
 
 /* ********** FUNCTIONS ********** */
 /* Create a new undefined yvar. */
@@ -108,48 +108,27 @@ yvar_t *yvar_init_string(yvar_t *var, ystr_t value) {
 		return (NULL);
 	return (var);
 }
-/* Create a new array yvar. */
-yvar_t *yvar_new_array(yarray_t value) {
+/* Create a new table yvar. */
+yvar_t *yvar_new_table(ytable_t *value) {
 	yvar_t *var = malloc0(sizeof(yvar_t));
 	if (!var)
 		return (NULL);
-	if (!yvar_init_array(var, value)) {
+	if (!yvar_init_table(var, value)) {
 		free0(var);
 		return (NULL);
 	}
 	return (var);
 }
-/* Initialize a yvar structure with an array value. */
-yvar_t *yvar_init_array(yvar_t *var, const yarray_t value) {
+/* Initialize a yvar structure with a table value. */
+yvar_t *yvar_init_table(yvar_t *var, ytable_t *value) {
 	if (!var)
 		return (NULL);
-	var->type = YVAR_ARRAY;
+	var->type = YVAR_TABLE;
 	if (value)
-		var->array_value = value;
-	else if (!(var->array_value = yarray_new()))
+		var->table_value = value;
+	else if (!(var->table_value = ytable_new()))
 		return (NULL);
-	return (var);
-}
-/* Create a new hashmap yvar. */
-yvar_t *yvar_new_hashmap(yhashmap_t *value) {
-	yvar_t *var = malloc0(sizeof(yvar_t));
-	if (!var)
-		return (NULL);
-	if (!yvar_init_hashmap(var, value)) {
-		free0(var);
-		return (NULL);
-	}
-	return (var);
-}
-/* Initialize a yvar structure with a hashmap value. */
-yvar_t *yvar_init_hashmap(yvar_t *var, yhashmap_t *value) {
-	if (!var)
-		return (NULL);
-	var->type = YVAR_HASHMAP;
-	if (value)
-		var->hashmap_value = value;
-	else if (!(var->hashmap_value = yhashmap_new(NULL, NULL)))
-		return (NULL);
+	ytable_set_delete_function(var->table_value, _yvar_delete_table_item, NULL);
 	return (var);
 }
 /* Create a new pointer yvar. */
@@ -179,8 +158,8 @@ yvar_t *yvar_new_object(void *value, yvar_function_t delete_function, void *dele
 /* Create a copy of a given yvar. */
 yvar_t *yvar_clone(const yvar_t *var) {
 	yvar_t *result;
-	size_t alloc_size = (var->type == YVAR_OBJECT) ? sizeof(yvar_object_t) : sizeof(yvar_t);
-
+	size_t alloc_size = (var->type == YVAR_OBJECT) ? sizeof(yvar_object_t) :
+	                    sizeof(yvar_t);
 	if (!var)
 		return (NULL);
 	if (!(result = malloc0(alloc_size)))
@@ -205,11 +184,8 @@ yvar_t *yvar_clone(const yvar_t *var) {
 		case YVAR_STRING:
 			result->string_value = ys_dup(var->string_value);
 			break;
-		case YVAR_ARRAY:
-			result->array_value = yarray_clone(var->array_value);
-			break;
-		case YVAR_HASHMAP:
-			result->hashmap_value = yhashmap_clone(var->hashmap_value);
+		case YVAR_TABLE:
+			result->table_value = ytable_clone(var->table_value);
 			break;
 		case YVAR_POINTER:
 			result->pointer_value = var->pointer_value;
@@ -234,7 +210,9 @@ void yvar_free(yvar_t *var) {
 	free0(var);
 }
 /* Recursively free a yvar. */
-static ystatus_t _yvar_delete_array_item(size_t index, void *data, void *user_data) {
+static ystatus_t _yvar_delete_table_item(uint64_t index, char *key, void *data,
+                                         void *user_data) {
+	free0(key);
 	yvar_delete((yvar_t*)data);
 	return (YENOERR);
 }
@@ -245,13 +223,12 @@ void yvar_delete(yvar_t *var) {
 		ybin_delete(var->binary_value);
 	if (var->type == YVAR_STRING)
 		ys_free(var->string_value);
-	else if (var->type == YVAR_ARRAY)
-		yarray_delete(&var->array_value, _yvar_delete_array_item, NULL);
-	else if (var->type == YVAR_HASHMAP)
-		yhashmap_delete(var->hashmap_value);
+	else if (var->type == YVAR_TABLE)
+		ytable_free(var->table_value);
 	free0(var);
 }
 
+/* ********** TYPE ********** */
 /* Tell if a yvar exists and is defined. */
 bool yvar_isset(const yvar_t *var) {
 	if (!var || var->type == YVAR_UNDEF)
@@ -265,42 +242,53 @@ yvar_type_t yvar_type(const yvar_t *var) {
 	return (var->type);
 }
 /* Tell if a yvar is of the given type. */
-bool yvar_isa(const yvar_t *var, yvar_type_t type) {
-	if (!var)
+bool yvar_is_a(const yvar_t *var, yvar_type_t type) {
+	if (!var) {
+		if (var->type == YVAR_UNDEF)
+			return (true);
 		return (false);
+	}
 	return ((var->type == type) ? true : false);
 }
+/* Tell if a yvar is undef. */
+bool yvar_is_undef(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_UNDEF));
+}
 /* Tell if a yvar is null. */
-bool yvar_isnull(const yvar_t *var) {
-	return (yvar_isa(var, YVAR_NULL));
+bool yvar_is_null(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_NULL));
 }
 /* Tell if a yvar is a boolean value. */
-bool yvar_isbool(const yvar_t *var) {
-	return (yvar_isa(var, YVAR_BOOL));
+bool yvar_is_bool(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_BOOL));
 }
 /* Tell if a yvar is an integer value. */
-bool yvar_isint(const yvar_t *var) {
-	return (yvar_isa(var, YVAR_INT));
+bool yvar_is_int(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_INT));
 }
 /* Tell if a yvar is a floating-point number value. */
-bool yvar_isfloat(const yvar_t *var) {
-	return (yvar_isa(var, YVAR_FLOAT));
+bool yvar_is_float(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_FLOAT));
 }
 /* Tell if a yvar is a character string value. */
-bool yvar_isstring(const yvar_t *var) {
-	return (yvar_isa(var, YVAR_STRING));
+bool yvar_is_string(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_STRING));
 }
-/* Tell if a yvar is an array value. */
-bool yvar_isarray(const yvar_t *var) {
-	return (yvar_isa(var, YVAR_ARRAY));
+/* Tell if a yvar is a table value. */
+bool yvar_is_table(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_TABLE));
 }
-/* Tell if a yvar is a hashmap value. */
-bool yvar_ishashmap(const yvar_t *var) {
-	return (yvar_isa(var, YVAR_HASHMAP));
+/* Tell if a yvar is a table value used as an array. */
+bool yvar_is_array(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_TABLE) && ytable_is_array(var->table_value));
 }
 /* Tell if a yvar is a pointer value. */
-bool yvar_ispointer(const yvar_t *var) {
-	return (yvar_isa(var, YVAR_POINTER));
+bool yvar_is_pointer(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_POINTER));
+}
+/* Tell if a yvar is an object value. */
+bool yvar_is_object(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_OBJECT));
 }
 
 /* Cast a yvar to a boolean value. */
@@ -472,17 +460,11 @@ ystr_t yvar_get_string(yvar_t *var) {
 		return (NULL);
 	return (var->string_value);
 }
-/* Return the array value of a yvar. */
-yarray_t yvar_get_array(yvar_t *var) {
-	if (var->type != YVAR_ARRAY)
+/* Return the table value of a yvar. */
+ytable_t *yvar_get_table(yvar_t *var) {
+	if (var->type != YVAR_TABLE)
 		return (NULL);
-	return (var->array_value);
-}
-/* Return the hashmap value of a yvar. */
-yhashmap_t *yvar_get_hashmap(yvar_t *var) {
-	if (var->type != YVAR_HASHMAP)
-		return (NULL);
-	return (var->hashmap_value);
+	return (var->table_value);
 }
 /* Return the pointer value of a yvar. */
 void *yvar_get_pointer(yvar_t *var) {

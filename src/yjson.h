@@ -11,6 +11,7 @@ extern "C" {
 #endif /* __cplusplus || c_plusplus */
 
 #include "ystatus.h"
+
 /**
  * @typedef	yjson_parser_t
  * 		JSON parser structure.
@@ -27,16 +28,15 @@ typedef struct {
 } yjson_parser_t;
 
 #include <stdbool.h>
+#include "yvar.h"
 #include "y.h"
 
 /**
  * @function	yjson_new
  *		Create a new JSON parser.
- * @param	json	Pointer to JSON parser object.
- * @param	input	Pointer to the string to parse.
  * @return	A pointer to the initialised JSON parser object.
  */
-yjson_parser_t *yjson_new(char *input);
+yjson_parser_t *yjson_new(void);
 
 /**
  * @function	yjson_free
@@ -49,9 +49,10 @@ void yjson_free(yjson_parser_t *json);
  * @function	yjson_parse
  *		Starts a JSON parser.
  * @param	json	Pointer to the JSON parser object.
+ * @param	input	Pointer to the string to parse.
  * @return	The root node value.
  */
-yvar_t yjson_parse(yjson_parser_t *json);
+yres_var_t yjson_parse(yjson_parser_t *json, char *input);
 
 /**
  * @function	yjson_print

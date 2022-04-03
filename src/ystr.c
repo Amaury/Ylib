@@ -5,7 +5,7 @@
 #include "y.h"
 
 /* Minimal size of ystrings. */
-#define YSTR_MINIMAL_SIZE	255
+#define YSTR_MINIMAL_SIZE	8
 /** @define _YARRAY_HEAD Get a pointer to a yarray's header. */
 #define _YSTR_HEAD(p)  ((ystr_head_t*)((void*)(p) - sizeof(ystr_head_t)))
 

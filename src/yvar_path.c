@@ -24,14 +24,15 @@ yvar_t *yvar_get_from_path(yvar_t *root, const char *path) {
 			}
 			--pt;
 			if (ys_bytesize(s)) {
-				if (!yvar_ishashmap(result))
+				if (!yvar_is_table(result) ||
+				    ytable_is_array(result->table_value))
 					goto error;
-				result = yhashmap_search(result->hashmap_value, s);
+				result = ytable_get_key_data(result->table_value, s);
 				if (!result)
 					goto error;
 			}
 		} else if (*pt == LBRACKET) {
-			if (!yvar_isarray(result))
+			if (!yvar_is_array(result))
 				goto error;
 			// get the content of the expression
 			s = ys_new("");
@@ -52,7 +53,7 @@ yvar_t *yvar_get_from_path(yvar_t *root, const char *path) {
 			// numerical expression: get the nth element of a list
 			if (ys_is_numeric(s)) {
 				size_t index = strtoll(s, NULL, 10);
-				result = yarray_get(result->array_value, index);
+				result = ytable_get_index_data(result->table_value, index);
 				continue;
 			}
 			goto error;

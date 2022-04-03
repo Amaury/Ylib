@@ -22,9 +22,11 @@ extern "C" {
 #include <stddef.h>
 #include <ctype.h>
 #include <math.h>
+#include <limits.h>
 #include <sys/param.h>	// MIN() and MAX() macros
 #include "ystatus.h"
 #include "ymemory.h"
+#include "yresult.h"
 #include "ybin.h"
 #include "ystr.h"
 #include "yarray.h"
@@ -46,7 +48,6 @@ extern "C" {
 #include "ytimer.h"
 #include "yurl.h"
 #include "yvalue.h"
-#include "yresult.h"
 #include "yvar.h"
 #include "yjson.h"
 

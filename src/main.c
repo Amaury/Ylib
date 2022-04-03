@@ -1,16 +1,17 @@
 #include "y.h"
 
-#if 1
-
+#if 0
 ystatus_t callback(uint64_t hash, char *key, void *data, void *user_data) {
 	//printf("in callback [%lu] (key: %lx) (data: %lx)\n", hash, (long unsigned int)key, (long unsigned int)data);
 	printf("[%lu/%s] : '%s'\n", hash, key, (char*)data);
 	return (YENOERR);
 }
 int main() {
-	ytable_t *yt = ytable_new();
+	ytable_t static_table;
+	ytable_init(&static_table, NULL, NULL);
+	ytable_t *yt = &static_table;//ytable_new();
 	ytable_add(yt, "aaa");
-	ytable_add(yt, "bbb");
+	ytable_set_index(yt, 8, "bbb");
 	ytable_add(yt, "ccc");
 	ytable_push(yt, "zzz");
 	ytable_push(yt, "yyy");
@@ -22,9 +23,12 @@ int main() {
 		printf("KO\n");
 	}
 
-	ytable_insert_index(yt, 123, "xxx");
-	ytable_add(yt, "www");
-	ytable_add(yt, "vvv");
+	ytable_set_index(yt, 123, "xxx");
+	ytable_mpush(yt, 2, "www", "vvv");
+	//ytable_add(yt, "www");
+	//ytable_add(yt, "vvv");
+	ytable_set_index(yt, 124, "uuu");
+	ytable_set_key(yt, "bbb", "111");
 	printf("length: %u\n", ytable_length(yt));
 	st = ytable_foreach(yt, callback, NULL);
 	if (st == YENOERR) {
@@ -77,27 +81,24 @@ int main(int argc, char **argv) {
 }
 #elif 1
 int main(int argc, char **argv) {
-	yjson_parser_t *json;
-	yvar_t val;
+	yjson_parser_t json;
 
 	if (argc != 2 && argc != 3) {
 		printf("ERROR bad entry\n");
 		return (1);
 	}
-	json = yjson_new(argv[1]);
-	val = yjson_parse(json);
-	if (json->status != YENOERR) {
-		printf("JSON error line '%d'\n", json->line);
-		return (2);
-	}
+	yres_var_t res = yjson_parse(&json, argv[1]);
+	YASSERT(res, "JSON error line '%d'\n", json.line);
+	yvar_t val = YRES_VAL(res);
 	printf("JSON type value : '%s'\n",
-	       yvar_isnull(&val) ? "null" :
-	       yvar_isbool(&val) ? "bool" :
-	       yvar_isint(&val) ? "int" :
-	       yvar_isfloat(&val) ? "float" :
-	       yvar_isstring(&val) ? "string" :
-	       yvar_isarray(&val) ? "array" :
-	       yvar_ishashmap(&val) ? "object" : "undef");
+	       yvar_is_undef(&val) ? "undef" :
+	       yvar_is_null(&val) ? "null" :
+	       yvar_is_bool(&val) ? "bool" :
+	       yvar_is_int(&val) ? "int" :
+	       yvar_is_float(&val) ? "float" :
+	       yvar_is_string(&val) ? "string" :
+	       yvar_is_array(&val) ? "array" :
+	       yvar_is_table(&val) ? "object" : "unknown");
 	yjson_print(&val);
 
 	if (argc == 3) {
@@ -106,7 +107,7 @@ int main(int argc, char **argv) {
 		yjson_print(result);
 	}
 
-	yjson_free(json);
+	//yjson_free(json);
 }
 #elif 0
 void show_attribute(size_t index, void *elem, void *data);
