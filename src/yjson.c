@@ -233,7 +233,10 @@ end:
 	}
 	return (result);
 }
-/* Parse a string. */
+/**
+ * Parse a string.
+ * @see	https://gist.github.com/MightyPork/52eda3e5677b4b03524e40c9f0ab1da5
+ */
 static void _yjson_parse_string(yjson_parser_t *json, yvar_t *value) {
 	//char *ptr = json->ptr;
 	// allocate a buffered string
