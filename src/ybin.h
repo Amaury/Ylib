@@ -75,6 +75,13 @@ ystatus_t ybin_init_bufferized(ybin_t *bin, void *data, size_t bytesize);
  */
 ybin_t *ybin_clone(ybin_t *bin);
 /**
+ * @function	ybin_copy
+ *		Copy the content of a ybin inside another one.
+ * @param	source	A pointer to the source ybin.
+ * @param	dest	A pointer to the destination ybin.
+ */
+void ybin_copy(ybin_t *source, ybin_t *dest);
+/**
  * @function	ybin_free
  *		Delete a ybin_t structure but not its enclosed data.
  * @param	bin	A pointer to a ybin_t.
@@ -86,6 +93,12 @@ void ybin_free(ybin_t *bin);
  * @param	bin	A pointer to a ybin_t.
  */
 void ybin_delete(ybin_t *bin);
+/**
+ * @function	ybin_delete_data
+ *		Delete the enclosed data of a ybin but not the ybin itself.
+ * @param	bin	A pointer to a ybin_t.
+ */
+void ybin_delete_data(ybin_t *bin);
 /**
  * @function	ybin_set
  *		Set a ybin data pointer (data is not copied). Existing pointer is freed.

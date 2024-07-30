@@ -212,7 +212,7 @@ extern "C" {
  * Compute a size by rounding a given number to the next power of 2, with a minimal value.
  */
 #define COMPUTE_SIZE(s, minimal)	(((s) < minimal) ? minimal : NEXT_POW2((s)))
-/** @define MODULO_POW2	Do a modulo over a power of two value. */
+/** @define MODULO_POW2	Do a modulo over a value that is a power of two. */
 #define MODULO_POW2(n, p)	((n) & ((p) - 1))	// equivalent to ((n) % (p))
 
 #if defined(__cplusplus) || defined(c_plusplus)

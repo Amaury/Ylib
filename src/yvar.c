@@ -1,170 +1,43 @@
 #include "yvar.h"
 
 /* ********** PRIVATE FUNCTIONS ********** */
+static yvar_t *_yvar_default_delete(yvar_t *var);
+static yvar_t *_yvar_default_clone(yvar_t *var);
 static ystatus_t _yvar_delete_table_item(uint64_t index, char *key, void *data, void *user_data);
 
+/* ********** GLOBAL VARIABLES ********** */
+static yvar_definition_t _yvar_default_definition_g = {
+	.delete_function = _yvar_default_delete,
+	.clone_function = _yvar_default_clone,
+};
+
 /* ********** FUNCTIONS ********** */
-/* Create a new undefined yvar. */
-yvar_t *yvar_new_undef(void) {
-	return (yvar_init_undef(malloc0(sizeof(yvar_t))));
-	
-}
-/* Initialize an yvar structure to an undefined value. */
-yvar_t *yvar_init_undef(yvar_t *var) {
+/* Default deletion of a yvar value. */
+yvar_t *_yvar_default_delete(yvar_t *var) {
 	if (!var)
 		return (NULL);
+	if (var->type == YVAR_BINARY)
+		ybin_delete_data(&var->binary_value);
+	else if (var->type == YVAR_STRING)
+		ys_free(var->string_value);
+	else if (var->type == YVAR_TABLE)
+		ytable_free(var->table_value);
 	var->type = YVAR_UNDEF;
 	return (var);
 }
-/* Create a new null yvar. */
-yvar_t *yvar_new_null(void) {
-	return (yvar_init_null(malloc0(sizeof(yvar_t))));
-	
-}
-/* Initialize an yvar structure to a null value. */
-yvar_t *yvar_init_null(yvar_t *var) {
-	if (!var)
-		return (NULL);
-	var->type = YVAR_NULL;
-	return (var);
-}
-/* Create a new boolean yvar. */
-yvar_t *yvar_new_bool(bool value) {
-	return (yvar_init_bool(malloc0(sizeof(yvar_t)), value));
-}
-/* Initialize a yvar structure with a boolean value. */
-yvar_t *yvar_init_bool(yvar_t *var, bool value) {
-	if (!var)
-		return (NULL);
-	var->type = YVAR_BOOL;
-	var->bool_value = value;
-	return (var);
-}
-/* Create a new int yvar. */
-yvar_t *yvar_new_int(int64_t value) {
-	return (yvar_init_int(malloc0(sizeof(yvar_t)), value));
-}
-/* Initialize a yvar structure with an integer value. */
-yvar_t *yvar_init_int(yvar_t *var, int64_t value) {
-	if (!var)
-		return (NULL);
-	var->type = YVAR_INT;
-	var->int_value = value;
-	return (var);
-}
-/* Create a new floating-point number yvar. */
-yvar_t *yvar_new_float(double value) {
-	return (yvar_init_int(malloc0(sizeof(yvar_t)), value));
-}
-/* Initialize a yvar structure with a floating-point number value. */
-yvar_t *yvar_init_float(yvar_t *var, double value) {
-	if (!var)
-		return (NULL);
-	var->type = YVAR_FLOAT;
-	var->float_value = value;
-	return (var);
-}
-/* Create a new binary yvar. */
-yvar_t *yvar_new_binary(ybin_t *value) {
-	yvar_t *var = malloc0(sizeof(yvar_t));
-	if (!var)
-		return (NULL);
-	if (!yvar_init_binary(var, value)) {
-		free0(var);
-		return (NULL);
-	}
-	return (var);
-}
-/** Initialize a yvar structure with a binary value. */
-yvar_t *yvar_init_binary(yvar_t *var, ybin_t *value) {
-	if (var)
-		return (NULL);
-	var->type = YVAR_BINARY;
-	if (value)
-		var->binary_value = value;
-	else if (!(var->binary_value = ybin_new()))
-		return (NULL);
-	return (var);
-}
-/* Create a new character string yvar. */
-yvar_t *yvar_new_string(ystr_t value) {
-	yvar_t *var = malloc0(sizeof(yvar_t));
-	if (!var)
-		return (NULL);
-	if (!yvar_init_string(var, value)) {
-		free0(var);
-		return (NULL);
-	}
-	return (var);
-}
-/* Initialize a yvar structure with a character string value. */
-yvar_t *yvar_init_string(yvar_t *var, ystr_t value) {
-	if (!var)
-		return (NULL);
-	var->type = YVAR_STRING;
-	if (value)
-		var->string_value = value;
-	else if (!(var->string_value = ys_new("")))
-		return (NULL);
-	return (var);
-}
-/* Create a new table yvar. */
-yvar_t *yvar_new_table(ytable_t *value) {
-	yvar_t *var = malloc0(sizeof(yvar_t));
-	if (!var)
-		return (NULL);
-	if (!yvar_init_table(var, value)) {
-		free0(var);
-		return (NULL);
-	}
-	return (var);
-}
-/* Initialize a yvar structure with a table value. */
-yvar_t *yvar_init_table(yvar_t *var, ytable_t *value) {
-	if (!var)
-		return (NULL);
-	var->type = YVAR_TABLE;
-	if (value)
-		var->table_value = value;
-	else if (!(var->table_value = ytable_new()))
-		return (NULL);
-	ytable_set_delete_function(var->table_value, _yvar_delete_table_item, NULL);
-	return (var);
-}
-/* Create a new pointer yvar. */
-yvar_t *yvar_new_pointer(void *value) {
-	return (yvar_init_pointer(malloc0(sizeof(yvar_t)), value));
-}
-/* Initialize a yvar structure with a pointer value. */
-yvar_t *yvar_init_pointer(yvar_t *var, void *value) {
-	if (!var)
-		return (NULL);
-	var->type = YVAR_POINTER;
-	var->pointer_value = value;
-	return (var);
-}
-/** Create a new object yvar. */
-yvar_t *yvar_new_object(void *value, yvar_function_t delete_function, void *delete_data) {
-	yvar_object_t *var = malloc0(sizeof(yvar_object_t));
-	if (!var)
-		return (NULL);
-	yvar_t *parent_var = (yvar_t*)var;
-	parent_var->type = YVAR_OBJECT;
-	parent_var->pointer_value = value;
-	var->delete_function = delete_function;
-	var->delete_data = delete_data;
-	return (parent_var);
-}
-/* Create a copy of a given yvar. */
-yvar_t *yvar_clone(const yvar_t *var) {
+/* Default cloning of a yvar. */
+yvar_t *_yvar_default_clone(yvar_t *var) {
 	yvar_t *result;
-	size_t alloc_size = (var->type == YVAR_OBJECT) ? sizeof(yvar_object_t) :
-	                    sizeof(yvar_t);
 	if (!var)
 		return (NULL);
-	if (!(result = malloc0(alloc_size)))
+	if (!(result = malloc0(sizeof(yvar_t))))
 		return (NULL);
-	result->type = var->type;
+	*result = (yvar_t){
+		.refcount = 1,
+		.definition = var->definition,
+		.user_data = var->user_data,
+		.type = var->type,
+	};
 	switch (var->type) {
 		case YVAR_UNDEF:
 		case YVAR_NULL:
@@ -178,8 +51,14 @@ yvar_t *yvar_clone(const yvar_t *var) {
 		case YVAR_FLOAT:
 			result->float_value = var->float_value;
 			break;
-		case YVAR_BINARY:
+		case YVAR_CONST_BINARY:
 			result->binary_value = var->binary_value;
+			break;
+		case YVAR_BINARY:
+			ybin_copy(&var->binary_value, &result->binary_value);
+			break;
+		case YVAR_CONST_STRING:
+			result->const_value = var->const_value;
 			break;
 		case YVAR_STRING:
 			result->string_value = ys_dup(var->string_value);
@@ -188,19 +67,296 @@ yvar_t *yvar_clone(const yvar_t *var) {
 			result->table_value = ytable_clone(var->table_value);
 			break;
 		case YVAR_POINTER:
-			result->pointer_value = var->pointer_value;
-			break;
 		case YVAR_OBJECT:
-			{
-				yvar_object_t *dst = (yvar_object_t*)result;
-				yvar_object_t *src = (yvar_object_t*)var;
-				dst->delete_function = src->delete_function;
-				dst->delete_data = src->delete_data;
-				result->pointer_value = var->pointer_value;
-			}
+			result->pointer_value = var->pointer_value;
 			break;
 	}
 	return (result);
+}
+/* Create a new undefined yvar. */
+yvar_t *yvar_new_undef(void) {
+	yvar_t *var = yvar_init_undef(malloc0(sizeof(yvar_t)));
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize an yvar structure to an undefined value. */
+yvar_t *yvar_init_undef(yvar_t *var) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_UNDEF,
+	};
+	return (var);
+}
+/* Create a new null yvar. */
+yvar_t *yvar_new_null(void) {
+	yvar_t *var = yvar_init_null(malloc0(sizeof(yvar_t)));
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize an yvar structure to a null value. */
+yvar_t *yvar_init_null(yvar_t *var) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_NULL,
+	};
+	return (var);
+}
+/* Create a new boolean yvar. */
+yvar_t *yvar_new_bool(bool value) {
+	yvar_t *var = yvar_init_bool(malloc0(sizeof(yvar_t)), value);
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize a yvar structure with a boolean value. */
+yvar_t *yvar_init_bool(yvar_t *var, bool value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_BOOL,
+		.bool_value = value,
+	};
+	return (var);
+}
+/* Create a new int yvar. */
+yvar_t *yvar_new_int(int64_t value) {
+	yvar_t *var = yvar_init_int(malloc0(sizeof(yvar_t)), value);
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize a yvar structure with an integer value. */
+yvar_t *yvar_init_int(yvar_t *var, int64_t value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_INT,
+		.int_value = value,
+	};
+	return (var);
+}
+/* Create a new floating-point number yvar. */
+yvar_t *yvar_new_float(double value) {
+	yvar_t *var = yvar_init_float(malloc0(sizeof(yvar_t)), value);
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize a yvar structure with a floating-point value. */
+yvar_t *yvar_init_float(yvar_t *var, double value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_FLOAT,
+		.float_value = value,
+	};
+	return (var);
+}
+/* Create a new constant binary yvar. */
+yvar_t *yvar_new_const_binary(ybin_t value) {
+	yvar_t *var = yvar_init_const_binary(malloc0(sizeof(yvar_t)), value);
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize a yvar structure with a constant binary value. */
+yvar_t *yvar_init_const_binary(yvar_t *var, ybin_t value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_CONST_BINARY,
+		.binary_value = value,
+	};
+	return (var);
+}
+/* Create a new binary yvar. */
+yvar_t *yvar_new_binary(ybin_t value) {
+	yvar_t *var = yvar_init_binary(malloc0(sizeof(yvar_t)), value);
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize a yvar structure with a binary value. */
+yvar_t *yvar_init_binary(yvar_t *var, ybin_t value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_BINARY,
+		.binary_value = value,
+	};
+	return (var);
+}
+/* Create a new constant character string value. */
+yvar_t *yvar_new_const_string(const char *value) {
+	yvar_t *var = yvar_init_const_string(malloc0(sizeof(yvar_t)), value);
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize a yvar structure with a constant character string value. */
+yvar_t *yvar_init_const_string(yvar_t *var, const char *value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_CONST_STRING,
+		.const_value = value,
+	};
+	return (var);
+}
+/* Create a new character string yvar. */
+yvar_t *yvar_new_string(ystr_t value) {
+	yvar_t *var = yvar_init_string(malloc0(sizeof(yvar_t)), value);
+	if (var) {
+		var->refcount = 1;
+		if (!var->string_value) {
+			free0(var);
+			return (NULL);
+		}
+	}
+	return (var);
+}
+/* Initialize a yvar structure with a character string value. */
+yvar_t *yvar_init_string(yvar_t *var, ystr_t value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_STRING,
+		.string_value = value ? value : ys_new(""),
+	};
+	return (var);
+}
+/* Create a new table yvar. */
+yvar_t *yvar_new_table(ytable_t *value) {
+	yvar_t *var = yvar_init_table(malloc0(sizeof(yvar_t)), value);
+	if (var) {
+		var->refcount = 1;
+		if (!var->table_value) {
+			free0(var);
+			return (NULL);
+		}
+	}
+	return (var);
+}
+/* Initialize a yvar structure with a table value. */
+yvar_t *yvar_init_table(yvar_t *var, ytable_t *value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_TABLE,
+		.table_value = value ? value : ytable_new(),
+	};
+	if (!value)
+		ytable_set_delete_function(var->table_value, _yvar_delete_table_item, NULL);
+	return (var);
+}
+/* Create a new pointer yvar. */
+yvar_t *yvar_new_pointer(void *value) {
+	yvar_t *var = yvar_init_pointer(malloc0(sizeof(yvar_t)), value);
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize a yvar structure with a pointer. */
+yvar_t *yvar_init_pointer(yvar_t *var, void *value) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = &_yvar_default_definition_g,
+		.type = YVAR_POINTER,
+		.pointer_value = value,
+	};
+	return (var);
+}
+/** Create a new object yvar. */
+yvar_t *yvar_new_object(void *value, yvar_definition_t *definition) {
+	yvar_t *var = yvar_init_object(malloc0(sizeof(yvar_t)), value, definition);
+	if (var)
+		var->refcount = 1;
+	return (var);
+}
+/* Initialize a yvar structure with an object. */
+yvar_t *yvar_init_object(yvar_t *var, void *value, yvar_definition_t *definition) {
+	if (!var)
+		return (NULL);
+	*var = (yvar_t){
+		.refcount = -1,
+		.definition = definition,
+		.type = YVAR_OBJECT,
+		.pointer_value = value,
+	};
+	return (var);
+}
+/* Increments the reference counter of a yvar. */
+yvar_t *yvar_retain(yvar_t *var) {
+	if (!var)
+		return (NULL);
+	if (!var->refcount)
+		return (var);
+	if (var->refcount > 0)
+		++var->refcount;
+	else
+		--var->refcount;
+	return (var);
+}
+/* Decrements the reference counter of a yvar. */
+yvar_t *yvar_release(yvar_t *var) {
+	if (!var)
+		return (NULL);
+	if (var->refcount < 0) {
+		// the yvar is static
+		if (++var->refcount == 0 && var->definition && var->definition->delete_function) {
+			// the embedded data is freed
+			var->definition->delete_function(var);
+		}
+		// the yvar becomes undefined
+		yvar_init_undef(var);
+		return (var);
+	}
+	// the yvar is dynamic
+	if (--var->refcount == 0) {
+		// the yvar must be freed
+		if (var->definition && var->definition->delete_function) {
+			// the embedded data is freed
+			var->definition->delete_function(var);
+		}
+		// the yvar is freed
+		free0(var);
+		return (NULL);
+	}
+	return (var);
+}
+/* Create a copy of a given yvar. */
+yvar_t *yvar_clone(yvar_t *var) {
+	if (!var)
+		return (NULL);
+	if (var->definition && var->definition->clone_function)
+		return (var->definition->clone_function(var));
+	return (NULL);
 }
 
 /* Free the memory allocated for a yvar. Stored value is not freed. */
@@ -213,19 +369,22 @@ void yvar_free(yvar_t *var) {
 static ystatus_t _yvar_delete_table_item(uint64_t index, char *key, void *data,
                                          void *user_data) {
 	free0(key);
-	yvar_delete((yvar_t*)data);
+	yvar_release((yvar_t*)data);
 	return (YENOERR);
 }
 void yvar_delete(yvar_t *var) {
+	yvar_release(var);
+	/*
 	if (!var)
 		return;
 	if (var->type == YVAR_BINARY)
-		ybin_delete(var->binary_value);
+		ybin_delete(&var->binary_value);
 	if (var->type == YVAR_STRING)
 		ys_free(var->string_value);
 	else if (var->type == YVAR_TABLE)
 		ytable_free(var->table_value);
 	free0(var);
+	*/
 }
 
 /* ********** TYPE ********** */
@@ -269,6 +428,18 @@ bool yvar_is_int(const yvar_t *var) {
 /* Tell if a yvar is a floating-point number value. */
 bool yvar_is_float(const yvar_t *var) {
 	return (yvar_is_a(var, YVAR_FLOAT));
+}
+/* Tell if a yvar is a constant binary value. */
+bool yvar_is_const_binary(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_CONST_BINARY));
+}
+/* Tell if a yvar is a binary value. */
+bool yvar_is_binary(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_BINARY));
+}
+/* Tell if a yvar is a constant character string value. */
+bool yvar_is_const_string(const yvar_t *var) {
+	return (yvar_is_a(var, YVAR_CONST_STRING));
 }
 /* Tell if a yvar is a character string value. */
 bool yvar_is_string(const yvar_t *var) {

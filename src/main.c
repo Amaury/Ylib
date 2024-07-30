@@ -1,6 +1,79 @@
 #include "y.h"
 
 #if 0
+
+#include <stdlib.h>
+#include <pthread.h>
+#include <stdatomic.h>
+
+typedef struct {
+	_Atomic int atomic_counter;
+	int non_atomic_counter;
+} toto_t;
+toto_t toto;
+void* main_thread(void *arg);
+void action(toto_t *t);
+
+void action(toto_t *t) {
+	++t->non_atomic_counter;
+	++t->atomic_counter;
+}
+
+void* main_thread(void *arg) {
+	for (int i = 0; i < 1000; ++i) {
+		//++toto.non_atomic_counter;
+		//++toto.atomic_counter;
+		action(&toto);
+	}
+	return NULL;
+}
+
+int main(int argc, char **argv) {
+	pthread_t threads[10];
+	for (int i = 0; i < 10; ++i)
+		pthread_create(&threads[i], NULL, main_thread, NULL);
+	for (int i = 0; i < 10; ++i)
+		pthread_join(threads[i], NULL);
+	printf("atomic     %d\n", toto.atomic_counter);
+	printf("non-atomic %d\n", toto.non_atomic_counter);
+	return (0);
+}
+
+#elif 0
+
+#include <stdio.h>
+#include <threads.h>
+#include <stdatomic.h>
+
+typedef struct {
+	atomic_int atomic_counter;
+	int non_atomic_counter;
+} toto_t;
+toto_t toto;
+int mythread(void *thr_data);
+
+int mythread(void *thr_data) {
+    (void)thr_data;
+    for(int n = 0; n < 1000; ++n) {
+        ++toto.non_atomic_counter;
+        ++toto.atomic_counter;
+        // for this example, relaxed memory order is sufficient, e.g.
+        // atomic_fetch_add_explicit(&atomic_counter, 1, memory_order_relaxed);
+    }
+    return 0;
+}
+
+int main(void) {
+    thrd_t thr[10];
+    for(int n = 0; n < 10; ++n)
+        thrd_create(&thr[n], mythread, NULL);
+    for(int n = 0; n < 10; ++n)
+        thrd_join(thr[n], NULL);
+    printf("atomic     %d\n", toto.atomic_counter);
+    printf("non-atomic %d\n", toto.non_atomic_counter);
+}
+
+#elif 0
 ystatus_t callback(uint64_t hash, char *key, void *data, void *user_data) {
 	//printf("in callback [%lu] (key: %lx) (data: %lx)\n", hash, (long unsigned int)key, (long unsigned int)data);
 	printf("[%lu/%s] : '%s'\n", hash, key, (char*)data);
@@ -105,8 +178,14 @@ int main(int argc, char **argv) {
 		const char *path = argv[2];
 		yvar_t *result = yvar_get_from_path(&val, path);
 		yjson_print(result);
+		result = yvar_release(result);
+		yjson_print(result);
 	}
 
+printf("AA\n");
+	yvar_release(&val);
+printf("BB\n");
+	yjson_print(&val);
 	//yjson_free(json);
 }
 #elif 0

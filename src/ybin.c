@@ -80,6 +80,17 @@ ybin_t *ybin_clone(ybin_t *bin) {
 	new_bin->buffer_size = bin->buffer_size;
 	return (new_bin);
 }
+/* Copy the content of a ybin inside another one. */
+void ybin_copy(ybin_t *source, ybin_t *dest) {
+	if (!source || !dest)
+		return;
+	dest->data = malloc0(source->buffer_size);
+	if (!dest->data)
+		return;
+	memcpy(dest->data, source->data, source->bytesize);
+	dest->bytesize = source->bytesize;
+	dest->buffer_size = source->buffer_size;
+}
 /* Delete a ybin_t structure but not its enclosed data. */
 void ybin_free(ybin_t *bin) {
 	if (!bin)
@@ -92,6 +103,12 @@ void ybin_delete(ybin_t *bin) {
 		return;
 	free0(bin->data);
 	free0(bin);
+}
+/* Delete the enclosed data of a ybin but not the ybin itself. */
+void ybin_delete_data(ybin_t *bin) {
+	if (!bin)
+		return;
+	free0(bin->data);
 }
 /* Set a bin_t data pointer (data is not copied). */
 void ybin_set(ybin_t *bin, void *data, size_t bytesize) {

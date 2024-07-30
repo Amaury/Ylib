@@ -66,19 +66,24 @@ typedef struct yvar_s yvar_t;
 
 /** @typedef yvar_function_t	Function used to delete an object variable. */
 typedef ystatus_t (*yvar_function_t)(void *pointer, void *user_data);
+/** @typedef yvar_memory_function_t	Function used to copy a yvar. */
+typedef yvar_t *(*yvar_memory_function_t)(yvar_t *var);
+
 /**
  * @typedef	yvar_type_t
  *		Type of a yvar.
- * @constant	YVAR_UNDEF	The yvar was not defined.
- * @constant	YVAR_NULL	Null value.
- * @constant	YVAR_BOOL	Boolean value.
- * @constant	YVAR_INT	Integer value.
- * @constant	YVAR_FLOAT	Floating-point number.
- * @constant	YVAR_BINARY	Binary data value.
- * @constant	YVAR_STRING	Character string value.
- * @constant	YVAR_TABLE	Table (ordered list of key/value pairs) value.
- * @constant	YVAR_POINTER	Any pointer.
- * @constant	YVAR_OBJECT	Any object.
+ * @constant	YVAR_UNDEF		The yvar was not defined.
+ * @constant	YVAR_NULL		Null.
+ * @constant	YVAR_BOOL		Boolean.
+ * @constant	YVAR_INT		Integer.
+ * @constant	YVAR_FLOAT		Floating-point number.
+ * @constant	YVAR_CONST_BINARY	Binary data.
+ * @constant	YVAR_BINARY		Bufferized binary data.
+ * @constant	YVAR_CONST_STRING	Constant character string.
+ * @constant	YVAR_STRING		Bufferized character string.
+ * @constant	YVAR_TABLE		Table (ordered list of values or key/value pairs).
+ * @constant	YVAR_POINTER		Any pointer.
+ * @constant	YVAR_OBJECT		Any object.
  */
 typedef enum {
 	YVAR_UNDEF = 0,
@@ -86,47 +91,57 @@ typedef enum {
 	YVAR_BOOL,
 	YVAR_INT,
 	YVAR_FLOAT,
+	YVAR_CONST_BINARY,
 	YVAR_BINARY,
+	YVAR_CONST_STRING,
 	YVAR_STRING,
 	YVAR_TABLE,
 	YVAR_POINTER,
 	YVAR_OBJECT,
 } yvar_type_t;
 /**
+ * @typedef	yvar_definition_t
+ *		Structure that contains memory management functions of a given type.
+ * @field	delete_function		Pointer to a delete function.
+ * @field	clone_function		Pointer to a function used to clone the object.
+ */
+typedef struct {
+	yvar_memory_function_t delete_function;
+	yvar_memory_function_t clone_function;
+} yvar_definition_t;
+/**
  * @struct	yvar_s
  *		Data wrapper.
+ * @field	dynamic_alloc	1 = dynamic allocation of the yvar.
+ * @field	refcount	Reference count.
+ * @field	definition	Memory management functions.
+ * @field	user_data	Pointer to user data.
  * @field	type		Data type.
  * @field	bool_value	Boolean value.
  * @field	int_valeur	Integer or datetime value.
  * @field	float_value	Floating-point value.
+ * @field	binary_value	Binary data value.
+ * @field	const_value	Constant character string value.
  * @field	string_value	Character string value.
  * @field	table_value	Table value.
  * @field	pointer_value	Pointer value.
  */
 struct yvar_s {
+	_Atomic int32_t refcount;
+	yvar_definition_t *definition;
+	void *user_data;
 	yvar_type_t type;
 	union {
 		bool bool_value;
 		int64_t int_value;
 		double float_value;
-		ybin_t *binary_value;
+		ybin_t binary_value;
+		const char *const_value;
 		ystr_t string_value;
 		ytable_t *table_value;
 		void *pointer_value;
 	};
 };
-/**
- * @typedef	yvar_object_t
- *		yvar-derived type for objects.
- * @field	var	yvar parent.
- * @field	delete_function	Pointer to a delete function.
- * @field	delete_data	Pointer to user data.
- */
-typedef struct {
-	yvar_t	var;
-	yvar_function_t delete_function;
-	void *delete_data;
-} yvar_object_t;
 
 /**
  * @typedef	yres_var_t
@@ -211,20 +226,51 @@ yvar_t *yvar_new_float(double value);
  */
 yvar_t *yvar_init_float(yvar_t *var, double value);
 /**
- * @function	yvar_new_binary
- *		Create a new binary value yvar.
- * @param	value	Pointer to a ybin, or NULL to create a new empty ybin.
+ * @function	yvar_new_const_binary
+ *		Create a new constant binary value yvar.
+ * @param	value	constant binary data that will not be freed.
  * @return	A pointer to the allocated yvar.
  */
-yvar_t *yvar_new_binary(ybin_t *value);
+yvar_t *yvar_new_const_binary(ybin_t value);
 /**
  * @function	yvar_init_binary
  *		Initialize a yvar structure with a binary value.
  * @param	var	A pointer to the structure that must be initialized.
- * @param	value	Pointer to a ybin, or NULL to create an new empty ybin.
+ * @param	value	Constant binary data that will not be freed.
  * @return	A pointer to the initialized structure.
  */
-yvar_t *yvar_init_binary(yvar_t *var, ybin_t *value);
+yvar_t *yvar_init_const_binary(yvar_t *var, ybin_t value);
+/**
+ * @function	yvar_new_binary
+ *		Create a new binary value yvar.
+ * @param	value	Binary data that should be freed when the yvar will be freed.
+ * @return	A pointer to the allocated yvar.
+ */
+yvar_t *yvar_new_binary(ybin_t value);
+/**
+ * @function	yvar_init_binary
+ *		Initialize a yvar structure with a binary value.
+ * @param	var	A pointer to the structure that must be initialized.
+ * @param	value	Binary data that should be freed when the yvar will be freed.
+ * @return	A pointer to the initialized structure.
+ */
+yvar_t *yvar_init_binary(yvar_t *var, ybin_t value);
+/**
+ * @function	yvar_new_const_string
+ *		Create a new constant character string yvar.
+ *		The enclosed string will not be freed when the yvar is freed.
+ * @param	value	Character string value, or NULL.
+ * @return	A pointer to the allocated yvar.
+ */
+yvar_t *yvar_new_const_string(const char *value);
+/**
+ * @function	yvar_init_const_string
+ *		Initialize a yvar structure with a character string value.
+ * @param	var	A pointer to the structure that must be initialized.
+ * @param	value	Character string value, or NULL.
+ * @return	A pointer to the initialized structure.
+ */
+yvar_t *yvar_init_const_string(yvar_t *var, const char *value);
 /**
  * @function	yvar_new_string
  *		Create a new character string yvar.
@@ -274,18 +320,41 @@ yvar_t *yvar_init_pointer(yvar_t *var, void *value);
  * @function	yvar_new_object
  *		Create a new object yvar.
  * @param	value		Pointer to an object.
- * @param	delete_function	Pointer to a delete function.
- * @param	delete_data	Pointer to user data.
+ * @param	definition	Pointer to the object definition.
  * @return	A pointer to the initialized yvar.
  */
-yvar_t *yvar_new_object(void *value, yvar_function_t delete_function, void *delete_data);
+yvar_t *yvar_new_object(void *value, yvar_definition_t *definition);
+/**
+ * @function	yvar_init_object
+ *		Initialize a yvar structure with an object value.
+ * @param	var		A pointer to the structure that must be initialized.
+ * @param	value		A pointer to the object.
+ * @param	definition	Pointer to the object definition.
+ * @return	A pointer to the initialized structure.
+ */
+yvar_t *yvar_init_object(yvar_t *var, void *value, yvar_definition_t *definition);
+/**
+ * @function	yvar_retain
+ *		Increments the reference counter of a yvar.
+ * @param	var	A pointer to the yvar.
+ * @return	A pointer to the yvar.
+ */
+yvar_t *yvar_retain(yvar_t *var);
+/**
+ * @function	yvar_release
+ *		Decrements the reference counter of a yvar.
+ *		Frees the yvar if the counter reaches zero.
+ * @param	var	A pointer to the yvar.
+ * @return	A pointer to the yvar, or NULL if it has been freed.
+ */
+yvar_t *yvar_release(yvar_t *var);
 /**
  * @function	yvar_clone
  *		Create a copy of a given yvar.
  * @param	var	A pointer to the yvar.
  * @return	A pointer to the newly allocated yvar.
  */
-yvar_t *yvar_clone(const yvar_t *var);
+yvar_t *yvar_clone(yvar_t *var);
 
 /* ********** DELETION ********** */
 /**
@@ -335,6 +404,12 @@ bool yvar_is_bool(const yvar_t *var);
 bool yvar_is_int(const yvar_t *var);
 /** @function yvar_is_float	Tell if a yvar is a floating-point number value. */
 bool yvar_is_float(const yvar_t *var);
+/** @function yvar_is_const_binary	Tell if a yvar is a constant binary value. */
+bool yvar_is_const_binary(const yvar_t *var);
+/** @function yvar_is_binary	Tell if a yvar is a binary value. */
+bool yvar_is_binary(const yvar_t *var);
+/** @function yvar_is_const_string	Tell if a yvar is a constant character string value. */
+bool yvar_is_const_string(const yvar_t *var);
 /** @function yvar_is_string	Tell if a yvar is a character string value. */
 bool yvar_is_string(const yvar_t *var);
 /** @function yvar_is_table	Tell if a yvar is a table value. */

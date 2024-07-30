@@ -67,7 +67,6 @@ yres_var_t yjson_parse(yjson_parser_t *json, char *input) {
 	if (json->status != YENOERR)
 		return (YRESULT_ERR(yres_var_t, json->status));
 	if (json->status == YENOERR && *json->ptr != '\0') {
-		printf("OUPS\n");
 		yvar_delete(&res.value);
 		yvar_init_undef(&res.value);
 		return (YRESULT_ERR(yres_var_t, (json->status = YESYNTAX)));
