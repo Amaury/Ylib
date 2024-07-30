@@ -2,7 +2,7 @@
 C utilities library.
 
 * Author: Amaury Bouchard <amaury@amaury.net>
-* License: [[http://www.gnu.org/licenses/lgpl.html|GNU Lesser General Public License]]
+* Dual license: [[http://www.gnu.org/licenses/lgpl.html|GNU Lesser General Public License]] and [[https://opensource.org/license/mit|MIT license]]
 
 More information on http://www.headerbrowser.org
 
